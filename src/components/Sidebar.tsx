@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, 
   ScanSearch, 
@@ -7,7 +7,7 @@ import {
   Radio
 } from 'lucide-react';
 import type { MiningSite } from '../types';
-import { SATELLITE_TELEMETRY } from '../data/mockData';
+import { fallbackTelemetry, fetchTelemetry, type SatelliteTelemetry } from '../services/api';
 
 
 export type NavTab = 'overview' | 'detection' | 'tracking' | 'alerts';
@@ -29,6 +29,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   allSites,
   onSelectSite
 }) => {
+  const [telemetry, setTelemetry] = useState<SatelliteTelemetry>(fallbackTelemetry);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchTelemetry().then((data) => {
+      if (!cancelled) setTelemetry(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const navItems = [
     {
       id: 'overview' as NavTab,
@@ -155,11 +167,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">Next Pass ETA:</span>
-            <span className="text-emerald-400 font-semibold">{SATELLITE_TELEMETRY.nextPassETA}</span>
+            <span className="text-emerald-400 font-semibold">{telemetry.nextPassETA}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">Cloud Shield:</span>
-            <span className="text-slate-300">{SATELLITE_TELEMETRY.cloudCoverage}</span>
+            <span className="text-slate-300">{telemetry.cloudCoverage}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-500">Cadastre Sync:</span>

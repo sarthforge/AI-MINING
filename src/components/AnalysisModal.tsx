@@ -10,6 +10,7 @@ import {
   Compass, 
   RotateCw
 } from 'lucide-react';
+import { pollAnalysisJob, startAnalysis } from '../services/api';
 import type { MiningSite } from '../types';
 
 
@@ -28,6 +29,10 @@ const SCAN_STEPS = [
   'Synthesizing geospatial verification dossier and confidence matrix...'
 ];
 
+function stepFromProgress(pct: number): number {
+  return Math.min(Math.floor((pct / 100) * SCAN_STEPS.length), SCAN_STEPS.length - 1);
+}
+
 export const AnalysisModal: React.FC<AnalysisModalProps> = ({
   isOpen,
   onClose,
@@ -36,38 +41,82 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
   const [isScanning, setIsScanning] = useState<boolean>(true);
   const [scanStepIndex, setScanStepIndex] = useState<number>(0);
   const [progress, setProgress] = useState<number>(0);
+  const [reportSite, setReportSite] = useState<MiningSite>(site);
+  const [scanNonce, setScanNonce] = useState(0);
 
   useEffect(() => {
     if (!isOpen) {
       setIsScanning(true);
       setScanStepIndex(0);
       setProgress(0);
+      setReportSite(site);
       return;
     }
 
+    let cancelled = false;
     setIsScanning(true);
     setProgress(0);
     setScanStepIndex(0);
+    setReportSite(site);
 
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
+    const runSimulated = () => {
+      const interval = setInterval(() => {
+        if (cancelled) {
           clearInterval(interval);
-          setIsScanning(false);
-          return 100;
+          return;
         }
-        const next = prev + 5;
-        const step = Math.min(
-          Math.floor((next / 100) * SCAN_STEPS.length),
-          SCAN_STEPS.length - 1
-        );
-        setScanStepIndex(step);
-        return next;
-      });
-    }, 110);
+        setProgress((prev) => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            setIsScanning(false);
+            return 100;
+          }
+          const next = prev + 5;
+          setScanStepIndex(stepFromProgress(next));
+          return next;
+        });
+      }, 110);
+      return () => clearInterval(interval);
+    };
 
-    return () => clearInterval(interval);
-  }, [isOpen, site.id]);
+    let stopSim: (() => void) | undefined;
+
+    (async () => {
+      try {
+        const job = await startAnalysis({
+          siteId: site.id,
+          baselineDate: site.baselineDate,
+          currentImageDate: site.lastObservationDate,
+        });
+        if (cancelled) return;
+        const done = await pollAnalysisJob(job.jobId, {
+          intervalMs: 1500,
+          onProgress: (j) => {
+            if (cancelled) return;
+            const pct = Math.max(5, Math.min(99, j.progress || 10));
+            setProgress(pct);
+            setScanStepIndex(stepFromProgress(pct));
+          },
+        });
+        if (cancelled) return;
+        if (done.status === 'DONE' && done.result) {
+          setReportSite(done.result);
+        }
+        setProgress(100);
+        setScanStepIndex(SCAN_STEPS.length - 1);
+        setIsScanning(false);
+      } catch {
+        if (cancelled) return;
+        // API unavailable or unauthorized — keep demo UX via simulated scan
+        stopSim = runSimulated();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      stopSim?.();
+    };
+  }, [isOpen, site, scanNonce]);
 
   if (!isOpen) return null;
 
@@ -77,11 +126,11 @@ TERRAWATCH AI — AUTONOMOUS SATELLITE INTELLIGENCE DOSSIER
 [DEMO / SIMULATED ENVIRONMENT REPORT]
 ===============================================================
 Generated At: ${new Date().toISOString()}
-Target AOI: ${site.name} (${site.code})
-Region: ${site.region}, ${site.country}
-Coordinates: ${site.formattedCoordinates}
-Sensor Pipeline: ${site.sensor}
-Observation Date: ${site.lastObservationDate} (vs Baseline: ${site.baselineDate})
+Target AOI: ${reportSite.name} (${reportSite.code})
+Region: ${reportSite.region}, ${reportSite.country}
+Coordinates: ${reportSite.formattedCoordinates}
+Sensor Pipeline: ${reportSite.sensor}
+Observation Date: ${reportSite.lastObservationDate} (vs Baseline: ${reportSite.baselineDate})
 
 LEGAL CLASSIFICATION:
 *** SUSPECTED UNAUTHORIZED MINING — PERMIT VERIFICATION REQUIRED ***
@@ -89,12 +138,12 @@ LEGAL CLASSIFICATION:
 ground truthing and official permit verification are required.)
 
 KEY GEOSPATIAL MEASUREMENTS:
-- Suspected New Excavation: ${site.newExcavationHa} Hectares
-- Total Operational Pit Area: ${site.totalAreaHa} Hectares
+- Suspected New Excavation: ${reportSite.newExcavationHa} Hectares
+- Total Operational Pit Area: ${reportSite.totalAreaHa} Hectares
 - Registered Concession Limit: 16.0 Hectares
-- Boundary Overflow: +2.4 Hectares outside permitted cadastre
-- Neural Ensemble Confidence: ${site.confidenceScore}% (Optical + SAR Multi-pass)
-- Canopy Loss Index (NDVI): ${site.ndviBaseline} -> ${site.ndviCurrent} (-62.8%)
+- Boundary Overflow: +${reportSite.newExcavationHa} Hectares outside permitted cadastre
+- Neural Ensemble Confidence: ${reportSite.confidenceScore}% (Optical + SAR Multi-pass)
+- Canopy Loss Index (NDVI): ${reportSite.ndviBaseline} -> ${reportSite.ndviCurrent}
 - Riparian Buffer Encroachment: 140 meters from river bank
 
 RECOMMENDED ENFORCEMENT ACTIONS:
@@ -113,7 +162,7 @@ government concession cadastre datasets.
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `TerraWatch_Dossier_${site.code}_${site.lastObservationDate}.txt`;
+    link.download = `TerraWatch_Dossier_${reportSite.code}_${reportSite.lastObservationDate}.txt`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -141,7 +190,7 @@ government concession cadastre datasets.
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-mono">
-                AOI: {site.code} — {site.name} ({site.formattedCoordinates})
+                AOI: {reportSite.code} — {reportSite.name} ({reportSite.formattedCoordinates})
               </p>
             </div>
           </div>
@@ -214,7 +263,7 @@ government concession cadastre datasets.
                     </h4>
                   </div>
                   <p className="text-xs text-rose-200/90 mt-1.5 leading-relaxed">
-                    Automated change segmentation detected <strong>{site.newExcavationHa} hectares</strong> of fresh excavation benches extending outside the licensed concession polygon boundary, encroaching 140 meters into the Rio Tapajós riparian river corridor.
+                    Automated change segmentation detected <strong>{reportSite.newExcavationHa} hectares</strong> of fresh excavation benches extending outside the licensed concession polygon boundary, encroaching 140 meters into the Rio Tapajós riparian river corridor.
                   </p>
                 </div>
               </div>
@@ -224,19 +273,19 @@ government concession cadastre datasets.
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
               <div className="p-3 rounded-xl bg-[#070b14] border border-slate-800">
                 <span className="text-slate-400 text-[11px] block mb-1">SUSPECTED BREACH</span>
-                <span className="text-xl font-bold text-rose-400">+{site.newExcavationHa} ha</span>
+                <span className="text-xl font-bold text-rose-400">+{reportSite.newExcavationHa} ha</span>
                 <span className="text-[10px] text-slate-500 block mt-0.5">Outside Cadastre</span>
               </div>
 
               <div className="p-3 rounded-xl bg-[#070b14] border border-slate-800">
                 <span className="text-slate-400 text-[11px] block mb-1">TOTAL EXCAVATION</span>
-                <span className="text-xl font-bold text-white">{site.totalAreaHa} ha</span>
+                <span className="text-xl font-bold text-white">{reportSite.totalAreaHa} ha</span>
                 <span className="text-[10px] text-amber-400 block mt-0.5">Cap: 16.0 ha (+15.0%)</span>
               </div>
 
               <div className="p-3 rounded-xl bg-[#070b14] border border-slate-800">
                 <span className="text-slate-400 text-[11px] block mb-1">DEMO CONFIDENCE</span>
-                <span className="text-xl font-bold text-emerald-400">{site.confidenceScore}%</span>
+                <span className="text-xl font-bold text-emerald-400">{reportSite.confidenceScore}%</span>
                 <span className="text-[10px] text-slate-500 block mt-0.5">Dual Optical/SAR</span>
               </div>
 
@@ -284,7 +333,9 @@ government concession cadastre datasets.
                 <div className="space-y-1.5 text-slate-400 text-[11px]">
                   <div className="flex justify-between">
                     <span>NDVI Vegetation Loss:</span>
-                    <span className="text-rose-400 font-bold">-0.49 (0.78 → 0.29)</span>
+                    <span className="text-rose-400 font-bold">
+                      {(reportSite.ndviCurrent - reportSite.ndviBaseline).toFixed(2)} ({reportSite.ndviBaseline} → {reportSite.ndviCurrent})
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Bare Soil Index (BSI):</span>
@@ -311,7 +362,7 @@ government concession cadastre datasets.
               <ul className="space-y-2 text-xs text-slate-300 font-sans">
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0"></span>
-                  <span><strong>Field Inspection:</strong> Dispatch regional environmental inspection agents to coordinates <code className="text-emerald-300 font-mono">{site.formattedCoordinates}</code> for GPS ground-truthing.</span>
+                  <span><strong>Field Inspection:</strong> Dispatch regional environmental inspection agents to coordinates <code className="text-emerald-300 font-mono">{reportSite.formattedCoordinates}</code> for GPS ground-truthing.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0"></span>
@@ -336,7 +387,7 @@ government concession cadastre datasets.
             {!isScanning && (
               <>
                 <button
-                  onClick={() => setIsScanning(true)}
+                  onClick={() => setScanNonce((n) => n + 1)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition cursor-pointer"
                 >
                   <RotateCw className="w-3.5 h-3.5" />

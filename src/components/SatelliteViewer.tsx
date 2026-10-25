@@ -14,7 +14,6 @@ import {
   AlertOctagon
 } from 'lucide-react';
 import type { MiningSite, OverlayPolygon } from '../types';
-import { OVERLAY_POLYGONS } from '../data/mockData';
 
 
 interface SatelliteViewerProps {
@@ -25,7 +24,8 @@ interface SatelliteViewerProps {
 type LayerMode = 'all' | 'suspected' | 'concession' | 'raw';
 
 export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({ site, onAnalyzeSite }) => {
-  const sitePolygons = site.polygons && site.polygons.length > 0 ? site.polygons : OVERLAY_POLYGONS;
+  // polygons come from GET /sites (or mock fallback sites); empty = raw imagery only
+  const sitePolygons = site.polygons ?? [];
   const [activeLayer, setActiveLayer] = useState<LayerMode>('all');
   const [selectedPolygon, setSelectedPolygon] = useState<OverlayPolygon | null>(sitePolygons[0]);
   const [zoomLevel, setZoomLevel] = useState<number>(1);

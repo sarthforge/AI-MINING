@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import type { NavTab } from './components/Sidebar';
@@ -11,29 +11,51 @@ import { AnalysisModal } from './components/AnalysisModal';
 import { SiteComparisonModal } from './components/SiteComparisonModal';
 import { AlertDrawer } from './components/AlertDrawer';
 import { DisclaimerFooter } from './components/DisclaimerFooter';
-import { MONITORED_SITES, SIMULATED_ALERTS } from './data/mockData';
+import {
+  dismissAlert,
+  fallbackAlerts,
+  fallbackSites,
+  fetchAlerts,
+  fetchSites,
+  resetAlerts,
+} from './services/api';
 import type { MiningSite, SatelliteAlert } from './types';
 import { exportSitesToCSV } from './utils/csvExport';
-import { 
-  ScanSearch, 
-  GitCompare, 
+import {
+  ScanSearch,
+  GitCompare,
   BellRing
 } from 'lucide-react';
 
 export function App() {
-  const [sites] = useState<MiningSite[]>(MONITORED_SITES);
-  const [selectedSite, setSelectedSite] = useState<MiningSite>(MONITORED_SITES[0]);
+  const [sites, setSites] = useState<MiningSite[]>(fallbackSites);
+  const [selectedSite, setSelectedSite] = useState<MiningSite>(fallbackSites[0]);
   const [currentTab, setCurrentTab] = useState<NavTab>('overview');
   const [selectedDateRange, setSelectedDateRange] = useState<string>('30d');
-  const [alerts, setAlerts] = useState<SatelliteAlert[]>(SIMULATED_ALERTS);
+  const [alerts, setAlerts] = useState<SatelliteAlert[]>(fallbackAlerts);
   const [isAlertDrawerOpen, setIsAlertDrawerOpen] = useState<boolean>(false);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState<boolean>(false);
-  const [analysisTargetSite, setAnalysisTargetSite] = useState<MiningSite>(MONITORED_SITES[0]);
-  
+  const [analysisTargetSite, setAnalysisTargetSite] = useState<MiningSite>(fallbackSites[0]);
+
   // Benchmark Comparison Engine State
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState<boolean>(false);
   const [comparisonSiteA, setComparisonSiteA] = useState<MiningSite | undefined>(undefined);
   const [comparisonSiteB, setComparisonSiteB] = useState<MiningSite | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [nextSites, nextAlerts] = await Promise.all([fetchSites(), fetchAlerts()]);
+      if (cancelled || nextSites.length === 0) return;
+      setSites(nextSites);
+      setSelectedSite((prev) => nextSites.find((s) => s.id === prev.id) ?? nextSites[0]);
+      setAnalysisTargetSite((prev) => nextSites.find((s) => s.id === prev.id) ?? nextSites[0]);
+      setAlerts(nextAlerts);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const unreadAlertCount = alerts.filter(a => !a.dismissed).length;
 
@@ -65,12 +87,18 @@ export function App() {
     setIsComparisonModalOpen(true);
   };
 
-  const handleDismissAlert = (alertId: string) => {
-    setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, dismissed: true } : a));
+  const handleDismissAlert = async (alertId: string) => {
+    const updated = await dismissAlert(alertId);
+    setAlerts((prev) =>
+      prev.map((a) =>
+        a.id === alertId ? (updated ?? { ...a, dismissed: true }) : a,
+      ),
+    );
   };
 
-  const handleResetAlerts = () => {
-    setAlerts(SIMULATED_ALERTS);
+  const handleResetAlerts = async () => {
+    const next = await resetAlerts();
+    setAlerts(next ?? fallbackAlerts);
   };
 
   const handleSelectSiteFromAlert = (siteId: string) => {
@@ -230,13 +258,12 @@ export function App() {
               {/* Quick Alerts Triage Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {alerts.map(alert => (
-                  <div 
+                  <div
                     key={alert.id}
-                    className={`p-4 rounded-xl border transition-all ${
-                      alert.dismissed 
-                        ? 'bg-[#080d1a]/50 border-slate-800 opacity-60' 
-                        : 'bg-[#0b1120] border-rose-900/60 shadow-lg shadow-rose-950/20'
-                    }`}
+                    className={`p-4 rounded-xl border transition-all ${alert.dismissed
+                      ? 'bg-[#080d1a]/50 border-slate-800 opacity-60'
+                      : 'bg-[#0b1120] border-rose-900/60 shadow-lg shadow-rose-950/20'
+                      }`}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 font-bold">

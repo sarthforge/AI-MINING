@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { 
   AreaChart, 
   Area, 
@@ -13,7 +13,8 @@ import {
 } from 'recharts';
 import { Activity, Calendar, ShieldCheck, AlertOctagon } from 'lucide-react';
 import { getHistoricalDataForSite } from '../data/mockData';
-import type { MiningSite } from '../types';
+import { fallbackHistory, fetchSiteHistory } from '../services/api';
+import type { MiningSite, MonthlyChangePoint } from '../types';
 
 interface ChangeTrackingChartProps {
   site: MiningSite;
@@ -21,8 +22,22 @@ interface ChangeTrackingChartProps {
 
 export const ChangeTrackingChart: React.FC<ChangeTrackingChartProps> = ({ site }) => {
   const [metricView, setMetricView] = useState<'area' | 'indices'>('area');
+  const [history, setHistory] = useState<MonthlyChangePoint[]>(fallbackHistory);
 
-  const chartData = useMemo(() => getHistoricalDataForSite(site), [site]);
+  useEffect(() => {
+    let cancelled = false;
+    fetchSiteHistory(site.id).then((data) => {
+      if (!cancelled) setHistory(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [site.id]);
+
+  const chartData = useMemo(
+    () => (history && history.length > 0 ? history : getHistoricalDataForSite(site)),
+    [history, site],
+  );
   const isBenchmark = site.isPermittedBenchmark || site.alertStatus === 'Normal Compliance';
   const permittedCap = site.permittedCapHa || chartData[0]?.permittedCapHa || 16.0;
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Radar, 
   AlertOctagon, 
@@ -7,6 +7,7 @@ import {
   TrendingUp, 
   ArrowUpRight
 } from 'lucide-react';
+import { fallbackKpis, fetchKpis, type DashboardKpis } from '../services/api';
 
 
 interface KPICardsProps {
@@ -22,9 +23,21 @@ export const KPICards: React.FC<KPICardsProps> = ({
   onNavigateToDetection,
   onOpenComparison
 }) => {
+  const [kpis, setKpis] = useState<DashboardKpis>(fallbackKpis);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchKpis().then((data) => {
+      if (!cancelled) setKpis(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* KPI 1: 16 Monitored Sites (9 Permitted Benchmarks + 7 Anomalies) */}
+      {/* KPI 1: Monitored Sites */}
       <div 
         onClick={onOpenComparison || onNavigateToDetection}
         className="bg-[#0b1120] border border-slate-800 hover:border-slate-700/80 rounded-xl p-4 transition-all hover:shadow-lg hover:shadow-cyan-950/20 cursor-pointer group relative overflow-hidden"
@@ -40,7 +53,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
           </div>
         </div>
         <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-3xl font-extrabold text-white tracking-tight font-mono">16</span>
+          <span className="text-3xl font-extrabold text-white tracking-tight font-mono">{kpis.totalSites}</span>
           <span className="text-xs font-medium text-cyan-400">Monitored AOIs</span>
         </div>
         <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800/60 mt-2">
@@ -52,7 +65,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
         </div>
       </div>
 
-      {/* KPI 2: 3 Simulated High-Priority Alerts */}
+      {/* KPI 2: High-Priority Alerts */}
       <div 
         onClick={onOpenAlerts}
         className="bg-[#0b1120] border border-rose-900/40 hover:border-rose-600/60 rounded-xl p-4 transition-all hover:shadow-lg hover:shadow-rose-950/30 cursor-pointer group relative overflow-hidden"
@@ -68,7 +81,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
           </div>
         </div>
         <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-3xl font-extrabold text-white tracking-tight font-mono">3</span>
+          <span className="text-3xl font-extrabold text-white tracking-tight font-mono">{kpis.activeAlerts}</span>
           <span className="text-xs font-semibold text-rose-400">Simulated High-Priority Alerts</span>
         </div>
         <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800/60 mt-2">
@@ -79,7 +92,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
         </div>
       </div>
 
-      {/* KPI 3: 2.4 Hectares New Excavation */}
+      {/* KPI 3: New Excavation */}
       <div 
         onClick={onNavigateToTracking}
         className="bg-[#0b1120] border border-amber-900/40 hover:border-amber-600/60 rounded-xl p-4 transition-all hover:shadow-lg hover:shadow-amber-950/30 cursor-pointer group relative overflow-hidden"
@@ -94,7 +107,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
           </div>
         </div>
         <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-3xl font-extrabold text-white tracking-tight font-mono">2.4</span>
+          <span className="text-3xl font-extrabold text-white tracking-tight font-mono">{kpis.totalNewExcavationHa}</span>
           <span className="text-xs font-bold text-amber-400">Hectares</span>
         </div>
         <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800/60 mt-2">
@@ -106,7 +119,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
         </div>
       </div>
 
-      {/* KPI 4: 94.2% Demo Confidence */}
+      {/* KPI 4: Confidence */}
       <div 
         onClick={onNavigateToDetection}
         className="bg-[#0b1120] border border-emerald-900/40 hover:border-emerald-600/60 rounded-xl p-4 transition-all hover:shadow-lg hover:shadow-emerald-950/30 cursor-pointer group relative overflow-hidden"
@@ -121,7 +134,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
           </div>
         </div>
         <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-3xl font-extrabold text-white tracking-tight font-mono">94.2%</span>
+          <span className="text-3xl font-extrabold text-white tracking-tight font-mono">{kpis.averageConfidence}%</span>
           <span className="text-xs font-semibold text-emerald-400">Demo Confidence</span>
         </div>
         <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800/60 mt-2">

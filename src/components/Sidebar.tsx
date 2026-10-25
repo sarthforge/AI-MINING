@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'overview' as NavTab,
       label: 'Overview',
       icon: LayoutDashboard,
-      badge: '12 AOIs',
+      badge: `${allSites.length} AOIs`,
       badgeColor: 'bg-slate-800 text-slate-300'
     },
     {
@@ -99,14 +99,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div>
           <div className="flex items-center justify-between px-2 mb-2">
             <p className="text-[11px] font-mono tracking-wider text-slate-500 uppercase">
-              Target Watchlist (12)
+              Target Watchlist ({allSites.length})
             </p>
             <span className="text-[10px] text-emerald-400 font-mono">ALL SYNCED</span>
           </div>
 
           <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
-            {allSites.slice(0, 6).map((site) => {
+            {allSites.slice(0, 7).map((site) => {
               const isSelected = site.id === selectedSite.id;
+              const isBenchmark = site.isPermittedBenchmark || site.alertStatus === 'Normal Compliance';
               return (
                 <button
                   key={site.id}
@@ -118,17 +119,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }`}
                 >
                   <div className="truncate">
-                    <span className="font-mono text-emerald-400 mr-1.5 text-[10px]">{site.code}</span>
+                    <span className={`font-mono mr-1.5 text-[10px] ${isBenchmark ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {site.code}
+                    </span>
                     <span className="text-slate-300 text-[11px]">{site.name.split('—')[0]}</span>
                   </div>
-                  {site.alertStatus === 'High Priority' && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                  {isBenchmark ? (
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" title="Permitted Benchmark"></span>
+                  ) : site.alertStatus === 'High Priority' ? (
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 animate-ping-slow" title="High Priority Breach"></span>
+                  ) : (
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" title="Under Review"></span>
                   )}
                 </button>
               );
             })}
             <div className="px-2 pt-1 text-[11px] text-slate-500 text-center">
-              + 6 more sites in table
+              + {allSites.length - 7} more sites in registry
             </div>
           </div>
         </div>

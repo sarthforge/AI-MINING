@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   AreaChart, 
   Area, 
@@ -11,8 +11,8 @@ import {
   ReferenceLine,
   Legend
 } from 'recharts';
-import { Activity, Calendar } from 'lucide-react';
-import { HISTORICAL_CHANGE_DATA } from '../data/mockData';
+import { Activity, Calendar, ShieldCheck, AlertOctagon } from 'lucide-react';
+import { getHistoricalDataForSite } from '../data/mockData';
 import type { MiningSite } from '../types';
 
 interface ChangeTrackingChartProps {
@@ -22,6 +22,17 @@ interface ChangeTrackingChartProps {
 export const ChangeTrackingChart: React.FC<ChangeTrackingChartProps> = ({ site }) => {
   const [metricView, setMetricView] = useState<'area' | 'indices'>('area');
 
+  const chartData = useMemo(() => getHistoricalDataForSite(site), [site]);
+  const isBenchmark = site.isPermittedBenchmark || site.alertStatus === 'Normal Compliance';
+  const permittedCap = site.permittedCapHa || chartData[0]?.permittedCapHa || 16.0;
+
+  const yDomain = useMemo(() => {
+    if (metricView === 'indices') return [0, 1];
+    const vals = chartData.map(d => d.totalExcavationHa).concat(chartData.map(d => d.permittedCapHa));
+    const minVal = Math.floor(Math.min(...vals) * 0.85);
+    const maxVal = Math.ceil(Math.max(...vals) * 1.15);
+    return [Math.max(0, minVal), maxVal];
+  }, [chartData, metricView]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -44,10 +55,16 @@ export const ChangeTrackingChart: React.FC<ChangeTrackingChartProps> = ({ site }
               </div>
             ))}
             {metricView === 'area' && (
-              <div className="pt-1.5 mt-1 border-t border-slate-800 text-[10px] text-rose-400 font-medium">
-                {payload[0]?.payload?.unauthorizedHa > 0
-                  ? `▲ ${payload[0]?.payload?.unauthorizedHa} ha suspected breach outside 16.0 ha cap`
-                  : '✓ Inside permitted limits'}
+              <div className="pt-1.5 mt-1 border-t border-slate-800 text-[10px] font-medium">
+                {payload[0]?.payload?.unauthorizedHa > 0 ? (
+                  <span className="text-rose-400">
+                    ▲ {payload[0]?.payload?.unauthorizedHa} ha suspected breach outside {permittedCap} ha cap
+                  </span>
+                ) : (
+                  <span className="text-emerald-400">
+                    ✓ Inside permitted concession limits ({permittedCap} ha cap)
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -66,14 +83,24 @@ export const ChangeTrackingChart: React.FC<ChangeTrackingChartProps> = ({ site }
             <div className="p-1.5 rounded-lg bg-emerald-950/60 border border-emerald-800/60 text-emerald-400">
               <Activity className="w-4 h-4" />
             </div>
-            <h2 className="text-base font-bold text-white">
-              Excavation Velocity & Spectral Degradation Time Series
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <span>Excavation Velocity & Spectral Degradation Time Series</span>
+              {isBenchmark ? (
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800/60 font-semibold inline-flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" />
+                  PERMITTED BENCHMARK
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-950 text-rose-400 border border-rose-800/60 font-semibold inline-flex items-center gap-1">
+                  <AlertOctagon className="w-3 h-3" />
+                  BREACH AOI
+                </span>
+              )}
             </h2>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
             Temporal change progression for {site.name} across 9-month Sentinel-2 observation cycle (Jan – Sep 2026)
           </p>
-
         </div>
 
         {/* Metric Selector Toggle */}
@@ -107,7 +134,7 @@ export const ChangeTrackingChart: React.FC<ChangeTrackingChartProps> = ({ site }
       <div className="h-72 w-full pt-2">
         <ResponsiveContainer width="100%" height="100%">
           {metricView === 'area' ? (
-            <AreaChart data={HISTORICAL_CHANGE_DATA} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="totalExcavationGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
@@ -120,17 +147,17 @@ export const ChangeTrackingChart: React.FC<ChangeTrackingChartProps> = ({ site }
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
               <XAxis dataKey="month" stroke="#64748b" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-              <YAxis domain={[12, 20]} stroke="#64748b" tick={{ fontSize: 11, fill: '#94a3b8' }} unit=" ha" />
+              <YAxis domain={yDomain} stroke="#64748b" tick={{ fontSize: 11, fill: '#94a3b8' }} unit=" ha" />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
               
               {/* Permitted Concession Limit Reference Line */}
               <ReferenceLine 
-                y={16.0} 
+                y={permittedCap} 
                 stroke="#10b981" 
                 strokeDasharray="4 4" 
                 strokeWidth={2}
-                label={{ value: 'Permitted Concession Cap: 16.0 ha', fill: '#10b981', fontSize: 10, position: 'insideTopLeft' }} 
+                label={{ value: `Permitted Concession Cap: ${permittedCap} ha`, fill: '#10b981', fontSize: 10, position: 'insideTopLeft' }} 
               />
 
               <Area 
@@ -153,7 +180,7 @@ export const ChangeTrackingChart: React.FC<ChangeTrackingChartProps> = ({ site }
               />
             </AreaChart>
           ) : (
-            <AreaChart data={HISTORICAL_CHANGE_DATA} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="ndviGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -189,18 +216,39 @@ export const ChangeTrackingChart: React.FC<ChangeTrackingChartProps> = ({ site }
 
       {/* Analytical Callout Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs font-mono">
-        <div className="p-2.5 rounded-lg bg-[#070b14] border border-slate-800 flex items-center justify-between">
-          <span className="text-slate-400">Boundary Breach Date:</span>
-          <span className="text-rose-400 font-bold">May 2026 (Exceeded 16 ha)</span>
-        </div>
-        <div className="p-2.5 rounded-lg bg-[#070b14] border border-slate-800 flex items-center justify-between">
-          <span className="text-slate-400">Current Breach Delta:</span>
-          <span className="text-amber-400 font-bold">+2.4 ha (15.0% above limit)</span>
-        </div>
-        <div className="p-2.5 rounded-lg bg-[#070b14] border border-slate-800 flex items-center justify-between">
-          <span className="text-slate-400">Mean Deforestation Pace:</span>
-          <span className="text-slate-200 font-bold">~0.4 ha / month</span>
-        </div>
+        {isBenchmark ? (
+          <>
+            <div className="p-2.5 rounded-lg bg-[#070b14] border border-emerald-900/40 flex items-center justify-between">
+              <span className="text-slate-400">Cadastre Compliance:</span>
+              <span className="text-emerald-400 font-bold">100% Within Bounds (Zero Overflow)</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-[#070b14] border border-slate-800 flex items-center justify-between">
+              <span className="text-slate-400">Permitted Headroom:</span>
+              <span className="text-cyan-400 font-bold">
+                {site.permittedCapHa ? `${(site.permittedCapHa - site.totalAreaHa).toFixed(1)} ha remaining` : 'Audited'}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-[#070b14] border border-slate-800 flex items-center justify-between">
+              <span className="text-slate-400">Vegetation Health:</span>
+              <span className="text-emerald-300 font-bold">Stable (Preserved Buffer)</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="p-2.5 rounded-lg bg-[#070b14] border border-rose-900/40 flex items-center justify-between">
+              <span className="text-slate-400">Boundary Breach Date:</span>
+              <span className="text-rose-400 font-bold">May 2026 (Exceeded Cap)</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-[#070b14] border border-slate-800 flex items-center justify-between">
+              <span className="text-slate-400">Current Breach Delta:</span>
+              <span className="text-amber-400 font-bold">+{site.newExcavationHa} ha outside cadastre</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-[#070b14] border border-slate-800 flex items-center justify-between">
+              <span className="text-slate-400">Mean Deforestation Pace:</span>
+              <span className="text-slate-200 font-bold">~0.4 ha / month</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

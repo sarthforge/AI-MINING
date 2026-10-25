@@ -13,38 +13,41 @@ interface KPICardsProps {
   onOpenAlerts: () => void;
   onNavigateToTracking: () => void;
   onNavigateToDetection: () => void;
+  onOpenComparison?: () => void;
 }
 
 export const KPICards: React.FC<KPICardsProps> = ({
   onOpenAlerts,
   onNavigateToTracking,
-  onNavigateToDetection
+  onNavigateToDetection,
+  onOpenComparison
 }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* KPI 1: 12 Monitored Sites */}
+      {/* KPI 1: 16 Monitored Sites (9 Permitted Benchmarks + 7 Anomalies) */}
       <div 
-        onClick={onNavigateToDetection}
+        onClick={onOpenComparison || onNavigateToDetection}
         className="bg-[#0b1120] border border-slate-800 hover:border-slate-700/80 rounded-xl p-4 transition-all hover:shadow-lg hover:shadow-cyan-950/20 cursor-pointer group relative overflow-hidden"
+        title="Click to open benchmark comparison engine"
       >
         <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/10 transition-all pointer-events-none"></div>
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-mono font-medium text-slate-400 uppercase tracking-wider">
-            Surveillance Grid
+            Surveillance Registry
           </span>
           <div className="p-2 rounded-lg bg-cyan-950/40 border border-cyan-800/40 text-cyan-400">
             <Radar className="w-4 h-4 animate-spin-slow" />
           </div>
         </div>
         <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-3xl font-extrabold text-white tracking-tight font-mono">12</span>
-          <span className="text-xs font-medium text-cyan-400">Monitored Sites</span>
+          <span className="text-3xl font-extrabold text-white tracking-tight font-mono">16</span>
+          <span className="text-xs font-medium text-cyan-400">Monitored AOIs</span>
         </div>
         <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800/60 mt-2">
-          <span className="text-slate-500">6 Global Mineral Basins</span>
-          <span className="inline-flex items-center text-emerald-400 font-medium">
+          <span className="text-emerald-400 font-mono text-[11px] font-semibold">9 Permitted • 7 Breaches</span>
+          <span className="inline-flex items-center text-cyan-400 font-medium text-[11px]">
             <TrendingUp className="w-3 h-3 mr-1" />
-            100% Uplink
+            Compare
           </span>
         </div>
       </div>

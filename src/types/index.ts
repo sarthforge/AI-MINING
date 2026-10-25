@@ -26,6 +26,10 @@ export interface MiningSite {
   currentImageUrl: string;
   baselineImageUrl: string;
   polygons?: OverlayPolygon[];
+  isPermittedBenchmark?: boolean;
+  permitLicenseNumber?: string;
+  permittedCapHa?: number;
+  environmentalRating?: 'Compliant (A)' | 'Nominal (B)' | 'Review Required (C)' | 'Critical Breach (F)';
 }
 
 

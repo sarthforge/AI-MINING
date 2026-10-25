@@ -5,7 +5,8 @@ import {
   Bell, 
   Calendar, 
   Sparkles,
-  MapPin
+  MapPin,
+  Scale
 } from 'lucide-react';
 import type { MiningSite } from '../types';
 
@@ -20,6 +21,7 @@ interface HeaderProps {
   onOpenAlerts: () => void;
   unreadAlertCount: number;
   onExportCSV: () => void;
+  onOpenComparison?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,7 +33,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAnalysis,
   onOpenAlerts,
   unreadAlertCount,
-  onExportCSV
+  onExportCSV,
+  onOpenComparison
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-[#070b14]/90 backdrop-blur-md border-b border-slate-800/80 px-4 lg:px-6 py-3 text-slate-100 shadow-xl shadow-black/40">
@@ -104,6 +107,19 @@ export const Header: React.FC<HeaderProps> = ({
               <option value="baseline" className="bg-[#0b1120] text-slate-200">Baseline Comparison (Nov 25 – Sep 26)</option>
             </select>
           </div>
+
+          {/* Compare Baseline Action Button */}
+          {onOpenComparison && (
+            <button
+              onClick={onOpenComparison}
+              className="flex items-center gap-1.5 bg-[#0e1c2d] hover:bg-cyan-950/80 text-cyan-300 hover:text-cyan-200 font-semibold text-xs px-3 py-1.5 rounded-lg border border-cyan-500/40 shadow-md shadow-cyan-950/40 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              title="Compare suspected breach sites against normal permitted benchmark mines"
+            >
+              <Scale className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden sm:inline">Compare Baseline</span>
+              <span className="sm:hidden">Compare</span>
+            </button>
+          )}
 
           {/* Analyze Site Action Button */}
           <button

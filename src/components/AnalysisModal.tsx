@@ -8,10 +8,10 @@ import {
   Cpu, 
   Layers, 
   Compass, 
-  RotateCw
+  RotateCw,
+  ShieldCheck
 } from 'lucide-react';
 import type { MiningSite } from '../types';
-
 
 interface AnalysisModalProps {
   isOpen: boolean;
@@ -24,7 +24,7 @@ const SCAN_STEPS = [
   'Executing atmospheric Sen2Cor calibration & cloud shadow masking...',
   'Computing differential NDVI vegetation loss & Bare Soil Index (BSI)...',
   'Running deep convolutional U-Net & Swin-Transformer segmentation...',
-  'Intersecting raster disturbance mask with ANM cadastre concession #BR-PA-2024-88...',
+  'Intersecting raster disturbance mask with statutory concession cadastre limits...',
   'Synthesizing geospatial verification dossier and confidence matrix...'
 ];
 
@@ -36,6 +36,9 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
   const [isScanning, setIsScanning] = useState<boolean>(true);
   const [scanStepIndex, setScanStepIndex] = useState<number>(0);
   const [progress, setProgress] = useState<number>(0);
+
+  const isBenchmark = site.isPermittedBenchmark || site.alertStatus === 'Normal Compliance';
+  const permittedCap = site.permittedCapHa || 16.0;
 
   useEffect(() => {
     if (!isOpen) {
@@ -84,24 +87,29 @@ Sensor Pipeline: ${site.sensor}
 Observation Date: ${site.lastObservationDate} (vs Baseline: ${site.baselineDate})
 
 LEGAL CLASSIFICATION:
-*** SUSPECTED UNAUTHORIZED MINING — PERMIT VERIFICATION REQUIRED ***
-(Definitive legal determination cannot be made solely via satellite imagery;
-ground truthing and official permit verification are required.)
+${isBenchmark 
+  ? '*** VERIFIED COMPLIANT BENCHMARK — ZERO BOUNDARY DEVIATION ***\n(Statutory operations strictly confined within registered mining concession boundary.)'
+  : '*** SUSPECTED UNAUTHORIZED MINING — PERMIT VERIFICATION REQUIRED ***\n(Definitive legal determination cannot be made solely via satellite imagery; ground truthing and official permit verification are required.)'
+}
 
 KEY GEOSPATIAL MEASUREMENTS:
-- Suspected New Excavation: ${site.newExcavationHa} Hectares
+- Registered Concession Title: ${site.permitLicenseNumber || site.concessionStatus}
+- Statutory Concession Cap: ${permittedCap} Hectares
 - Total Operational Pit Area: ${site.totalAreaHa} Hectares
-- Registered Concession Limit: 16.0 Hectares
-- Boundary Overflow: +2.4 Hectares outside permitted cadastre
+- Boundary Overflow / Breach: ${isBenchmark ? '0.0 Hectares (100% Compliant)' : `+${site.newExcavationHa} Hectares outside permitted cadastre`}
 - Neural Ensemble Confidence: ${site.confidenceScore}% (Optical + SAR Multi-pass)
-- Canopy Loss Index (NDVI): ${site.ndviBaseline} -> ${site.ndviCurrent} (-62.8%)
-- Riparian Buffer Encroachment: 140 meters from river bank
+- Canopy Loss Index (NDVI): ${site.ndviBaseline} -> ${site.ndviCurrent} (${((site.ndviCurrent - site.ndviBaseline) / site.ndviBaseline * 100).toFixed(1)}%)
+- Classification Category: ${isBenchmark ? 'Permitted Baseline Control AOI' : 'Suspected Unauthorized Anomaly'}
 
-RECOMMENDED ENFORCEMENT ACTIONS:
+${isBenchmark ? `RECOMMENDED ACTIONS (BENCHMARK REFERENCE):
+1. Priority Level: CODE GREEN — Nominal Operation Baseline
+2. Maintain active Sentinel-2 5-day observation cycle.
+3. Utilize spectral reflectance values as regional control baseline for false positive suppression.
+4. No environmental enforcement dispatch required.` : `RECOMMENDED ENFORCEMENT ACTIONS:
 1. Priority Level: CODE ORANGE — Urgent Field Ground-Truthing
-2. Dispatch regional environmental inspection unit to coordinates.
+2. Dispatch regional environmental inspection unit to coordinates ${site.formattedCoordinates}.
 3. Cross-reference concession title with National Mining Cadastre.
-4. Issue provisional audit notice to active site concession holder.
+4. Issue provisional audit notice to active site concession holder.`}
 
 DEPLOYMENT PREREQUISITES NOTE:
 Actual production deployment requires multi-constellation satellite imagery,
@@ -128,17 +136,27 @@ government concession cadastre datasets.
         {/* Modal Top Header */}
         <div className="flex items-center justify-between px-6 py-4 bg-[#070b14] border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-              <Sparkles className="w-5 h-5 animate-pulse" />
+            <div className={`p-2 rounded-xl border ${
+              isBenchmark
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                : 'bg-rose-500/10 border-rose-500/30 text-rose-400'
+            }`}>
+              {isBenchmark ? <ShieldCheck className="w-5 h-5" /> : <Sparkles className="w-5 h-5 animate-pulse" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-white">
                   Autonomous Satellite AI Analysis Report
                 </h3>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                  DEMO / SIMULATED
-                </span>
+                {isBenchmark ? (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800/60 font-semibold">
+                    BASELINE BENCHMARK
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    DEMO / SIMULATED
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-400 font-mono">
                 AOI: {site.code} — {site.name} ({site.formattedCoordinates})
@@ -159,7 +177,6 @@ government concession cadastre datasets.
           /* Scanning Loading State */
           <div className="p-8 flex flex-col items-center justify-center text-center space-y-6">
             <div className="relative w-36 h-36 flex items-center justify-center">
-              {/* Radar Circle and Spinner */}
               <div className="absolute inset-0 rounded-full border border-emerald-500/20 animate-ping-slow"></div>
               <div className="absolute inset-2 rounded-full border border-cyan-500/30"></div>
               <div className="absolute inset-4 rounded-full border border-dashed border-emerald-500/40 animate-spin-slow"></div>
@@ -199,51 +216,86 @@ government concession cadastre datasets.
           /* Completed Analysis Report */
           <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
             {/* Primary Finding Alert Banner */}
-            <div className="p-4 rounded-xl bg-gradient-to-r from-rose-950/70 via-rose-900/40 to-slate-900 border-2 border-rose-600/70 shadow-lg shadow-rose-950/40">
-              <div className="flex items-start gap-3.5">
-                <div className="p-2 rounded-lg bg-rose-600/20 border border-rose-500 text-rose-400 shrink-0 mt-0.5">
-                  <AlertTriangle className="w-5 h-5 animate-pulse" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-700">
-                      FLAGGED ANOMALY
-                    </span>
-                    <h4 className="text-sm font-bold text-white tracking-wide uppercase">
-                      suspected unauthorized mining — permit verification required
-                    </h4>
+            {isBenchmark ? (
+              <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/70 via-emerald-900/40 to-slate-900 border-2 border-emerald-600/70 shadow-lg shadow-emerald-950/40">
+                <div className="flex items-start gap-3.5">
+                  <div className="p-2 rounded-lg bg-emerald-600/20 border border-emerald-500 text-emerald-400 shrink-0 mt-0.5">
+                    <ShieldCheck className="w-5 h-5" />
                   </div>
-                  <p className="text-xs text-rose-200/90 mt-1.5 leading-relaxed">
-                    Automated change segmentation detected <strong>{site.newExcavationHa} hectares</strong> of fresh excavation benches extending outside the licensed concession polygon boundary, encroaching 140 meters into the Rio Tapajós riparian river corridor.
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700">
+                        VERIFIED BENCHMARK
+                      </span>
+                      <h4 className="text-sm font-bold text-white tracking-wide uppercase">
+                        CERTIFIED CONCESSION — ZERO BOUNDARY OVERFLOW
+                      </h4>
+                    </div>
+                    <p className="text-xs text-emerald-200/90 mt-1.5 leading-relaxed">
+                      Automated change segmentation confirms <strong>0.0 hectares</strong> of unauthorized ground disturbance. All active extraction pits and infrastructure are 100% contained within the official registered concession envelope ({site.permitLicenseNumber || 'Statutory Lease'}).
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-gradient-to-r from-rose-950/70 via-rose-900/40 to-slate-900 border-2 border-rose-600/70 shadow-lg shadow-rose-950/40">
+                <div className="flex items-start gap-3.5">
+                  <div className="p-2 rounded-lg bg-rose-600/20 border border-rose-500 text-rose-400 shrink-0 mt-0.5">
+                    <AlertTriangle className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-700">
+                        FLAGGED ANOMALY
+                      </span>
+                      <h4 className="text-sm font-bold text-white tracking-wide uppercase">
+                        suspected unauthorized mining — permit verification required
+                      </h4>
+                    </div>
+                    <p className="text-xs text-rose-200/90 mt-1.5 leading-relaxed">
+                      Automated change segmentation detected <strong>{site.newExcavationHa} hectares</strong> of fresh excavation benches extending outside the licensed concession polygon boundary, encroaching past statutory cadastre markers.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Core Metrics Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
               <div className="p-3 rounded-xl bg-[#070b14] border border-slate-800">
-                <span className="text-slate-400 text-[11px] block mb-1">SUSPECTED BREACH</span>
-                <span className="text-xl font-bold text-rose-400">+{site.newExcavationHa} ha</span>
-                <span className="text-[10px] text-slate-500 block mt-0.5">Outside Cadastre</span>
+                <span className="text-slate-400 text-[11px] block mb-1">
+                  {isBenchmark ? 'BOUNDARY STATUS' : 'SUSPECTED BREACH'}
+                </span>
+                <span className={`text-xl font-bold ${isBenchmark ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {isBenchmark ? '0.0 ha' : `+${site.newExcavationHa} ha`}
+                </span>
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  {isBenchmark ? '100% Inside Cadastre' : 'Outside Cadastre'}
+                </span>
               </div>
 
               <div className="p-3 rounded-xl bg-[#070b14] border border-slate-800">
                 <span className="text-slate-400 text-[11px] block mb-1">TOTAL EXCAVATION</span>
                 <span className="text-xl font-bold text-white">{site.totalAreaHa} ha</span>
-                <span className="text-[10px] text-amber-400 block mt-0.5">Cap: 16.0 ha (+15.0%)</span>
+                <span className="text-[10px] text-emerald-400 block mt-0.5">
+                  Cap: {permittedCap} ha ({isBenchmark ? 'Headroom OK' : 'Over Limit'})
+                </span>
               </div>
 
               <div className="p-3 rounded-xl bg-[#070b14] border border-slate-800">
-                <span className="text-slate-400 text-[11px] block mb-1">DEMO CONFIDENCE</span>
+                <span className="text-slate-400 text-[11px] block mb-1">AI CONFIDENCE</span>
                 <span className="text-xl font-bold text-emerald-400">{site.confidenceScore}%</span>
                 <span className="text-[10px] text-slate-500 block mt-0.5">Dual Optical/SAR</span>
               </div>
 
               <div className="p-3 rounded-xl bg-[#070b14] border border-slate-800">
-                <span className="text-slate-400 text-[11px] block mb-1">RECOMMENDED PRIORITY</span>
-                <span className="text-sm font-bold text-amber-400">CODE ORANGE</span>
-                <span className="text-[10px] text-slate-500 block mt-0.5">Urgent Inspection</span>
+                <span className="text-slate-400 text-[11px] block mb-1">PRIORITY LEVEL</span>
+                <span className={`text-sm font-bold ${isBenchmark ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {isBenchmark ? 'CODE GREEN' : 'CODE ORANGE'}
+                </span>
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  {isBenchmark ? 'Baseline Control' : 'Urgent Inspection'}
+                </span>
               </div>
             </div>
 
@@ -258,19 +310,23 @@ government concession cadastre datasets.
                 <div className="space-y-1.5 text-slate-400 text-[11px]">
                   <div className="flex justify-between">
                     <span>Registered Title:</span>
-                    <span className="text-slate-200">#BR-PA-2024-88 (ANM)</span>
+                    <span className="text-slate-200">{site.permitLicenseNumber || 'ANM Federal Cadastre'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Licensed Surface Cap:</span>
-                    <span className="text-slate-200">16.0 Hectares</span>
+                    <span className="text-slate-200">{permittedCap} Hectares</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Current Active Footprint:</span>
-                    <span className="text-rose-400 font-bold">18.6 Hectares</span>
+                    <span className={isBenchmark ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                      {site.totalAreaHa} Hectares
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Status:</span>
-                    <span className="text-amber-400 font-semibold">Boundary Overflow Confirmed</span>
+                    <span className={`font-semibold ${isBenchmark ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {isBenchmark ? 'Compliant with Title' : 'Boundary Overflow Confirmed'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -283,20 +339,28 @@ government concession cadastre datasets.
                 </h5>
                 <div className="space-y-1.5 text-slate-400 text-[11px]">
                   <div className="flex justify-between">
-                    <span>NDVI Vegetation Loss:</span>
-                    <span className="text-rose-400 font-bold">-0.49 (0.78 → 0.29)</span>
+                    <span>NDVI Vegetation Delta:</span>
+                    <span className={isBenchmark ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
+                      {site.ndviBaseline} → {site.ndviCurrent} ({isBenchmark ? 'Preserved' : 'Deforestation'})
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Bare Soil Index (BSI):</span>
-                    <span className="text-amber-400 font-bold">+0.54 (Heavy Exposure)</span>
+                    <span className={isBenchmark ? 'text-cyan-400 font-bold' : 'text-amber-400 font-bold'}>
+                      {isBenchmark ? 'Contained to Pit Floor' : 'Heavy Exposure Outside Cadastre'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>SAR Coherence (S1 VV/VH):</span>
-                    <span className="text-slate-200">High contrast drop (Clear-cut)</span>
+                    <span className="text-slate-200">
+                      {isBenchmark ? 'Stable structural backscatter' : 'High contrast clear-cut drop'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Water Sedimentation Plume:</span>
-                    <span className="text-cyan-400 font-bold">+184% Turbidity Index</span>
+                    <span>Sediment Retention:</span>
+                    <span className={isBenchmark ? 'text-emerald-400 font-bold' : 'text-cyan-400 font-bold'}>
+                      {isBenchmark ? 'Engineered Closed Circuit' : 'Elevated Turbidity Index'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -306,21 +370,40 @@ government concession cadastre datasets.
             <div className="p-4 rounded-xl bg-[#070b14] border border-slate-800 space-y-2.5">
               <h5 className="text-xs font-bold font-mono text-white flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Recommended Inspection Protocol</span>
+                <span>{isBenchmark ? 'Baseline Quality Protocol' : 'Recommended Inspection Protocol'}</span>
               </h5>
               <ul className="space-y-2 text-xs text-slate-300 font-sans">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0"></span>
-                  <span><strong>Field Inspection:</strong> Dispatch regional environmental inspection agents to coordinates <code className="text-emerald-300 font-mono">{site.formattedCoordinates}</code> for GPS ground-truthing.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0"></span>
-                  <span><strong>Permit Verification:</strong> Formally audit national mining cadastre for any recent permit renewal or extension filings.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0"></span>
-                  <span><strong>Riparian Mitigation:</strong> Deploy sediment retention booms along the northern quarry edge to prevent further runoff into Rio Tapajós.</span>
-                </li>
+                {isBenchmark ? (
+                  <>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0"></span>
+                      <span><strong>Routine Observation:</strong> Maintain scheduled 5-day Sentinel-2 MSI orbit telemetry passes without priority alerts.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0"></span>
+                      <span><strong>Baseline Calibration:</strong> Retain this site as a calibrated ground-truth control mine to tune bare soil anomaly thresholds regionally.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0"></span>
+                      <span><strong>Statutory Audit:</strong> Record is fully compliant with cadastral titles ({site.permitLicenseNumber || 'ANM Licensed'}).</span>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-1.5 shrink-0"></span>
+                      <span><strong>Field Inspection:</strong> Dispatch regional environmental inspection agents to coordinates <code className="text-emerald-300 font-mono">{site.formattedCoordinates}</code> for GPS ground-truthing.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0"></span>
+                      <span><strong>Permit Verification:</strong> Formally audit national mining cadastre for any recent permit renewal filings.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0"></span>
+                      <span><strong>Mitigation Notice:</strong> Require site operators to cease unpermitted clearing and stabilize exposed riverbank soils.</span>
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
           </div>

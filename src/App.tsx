@@ -8,6 +8,7 @@ import { BeforeAfterSlider } from './components/BeforeAfterSlider';
 import { ChangeTrackingChart } from './components/ChangeTrackingChart';
 import { SiteDataTable } from './components/SiteDataTable';
 import { AnalysisModal } from './components/AnalysisModal';
+import { SiteComparisonModal } from './components/SiteComparisonModal';
 import { AlertDrawer } from './components/AlertDrawer';
 import { DisclaimerFooter } from './components/DisclaimerFooter';
 import { MONITORED_SITES, SIMULATED_ALERTS } from './data/mockData';
@@ -19,7 +20,6 @@ import {
   BellRing
 } from 'lucide-react';
 
-
 export function App() {
   const [sites] = useState<MiningSite[]>(MONITORED_SITES);
   const [selectedSite, setSelectedSite] = useState<MiningSite>(MONITORED_SITES[0]);
@@ -29,6 +29,11 @@ export function App() {
   const [isAlertDrawerOpen, setIsAlertDrawerOpen] = useState<boolean>(false);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState<boolean>(false);
   const [analysisTargetSite, setAnalysisTargetSite] = useState<MiningSite>(MONITORED_SITES[0]);
+  
+  // Benchmark Comparison Engine State
+  const [isComparisonModalOpen, setIsComparisonModalOpen] = useState<boolean>(false);
+  const [comparisonSiteA, setComparisonSiteA] = useState<MiningSite | undefined>(undefined);
+  const [comparisonSiteB, setComparisonSiteB] = useState<MiningSite | undefined>(undefined);
 
   const unreadAlertCount = alerts.filter(a => !a.dismissed).length;
 
@@ -41,6 +46,23 @@ export function App() {
   const handleOpenAnalysisFromHeader = () => {
     setAnalysisTargetSite(selectedSite);
     setIsAnalysisModalOpen(true);
+  };
+
+  const handleOpenComparison = (targetSite?: MiningSite) => {
+    const focusSite = targetSite || selectedSite;
+    const permittedBenchmarks = sites.filter(s => s.isPermittedBenchmark || s.alertStatus === 'Normal Compliance');
+    const breachSites = sites.filter(s => !s.isPermittedBenchmark || s.alertStatus !== 'Normal Compliance');
+
+    if (focusSite.isPermittedBenchmark || focusSite.alertStatus === 'Normal Compliance') {
+      // Focus site is a permitted benchmark: place breach on left and benchmark on right
+      setComparisonSiteA(breachSites[0] || sites[0]);
+      setComparisonSiteB(focusSite);
+    } else {
+      // Focus site is a breach: place breach on left and permitted benchmark on right
+      setComparisonSiteA(focusSite);
+      setComparisonSiteB(permittedBenchmarks[0] || sites[sites.length - 1]);
+    }
+    setIsComparisonModalOpen(true);
   };
 
   const handleDismissAlert = (alertId: string) => {
@@ -76,6 +98,7 @@ export function App() {
         onOpenAlerts={() => setIsAlertDrawerOpen(true)}
         unreadAlertCount={unreadAlertCount}
         onExportCSV={handleExportCSV}
+        onOpenComparison={() => handleOpenComparison(selectedSite)}
       />
 
       {/* Main Workspace Layout (Sidebar + Content Area) */}
@@ -89,7 +112,6 @@ export function App() {
           allSites={sites}
           onSelectSite={(site) => {
             setSelectedSite(site);
-            // If currently on alerts tab, switch to detection to view the selected site
             if (currentTab === 'alerts') setCurrentTab('detection');
           }}
         />
@@ -101,6 +123,7 @@ export function App() {
             onOpenAlerts={() => setIsAlertDrawerOpen(true)}
             onNavigateToTracking={() => setCurrentTab('tracking')}
             onNavigateToDetection={() => setCurrentTab('detection')}
+            onOpenComparison={() => handleOpenComparison(selectedSite)}
           />
 
           {/* Tab 1: Overview (Comprehensive Intelligence Hub) */}
@@ -118,7 +141,7 @@ export function App() {
                 <ChangeTrackingChart site={selectedSite} />
               </div>
 
-              {/* All Sites Data Table */}
+              {/* All Sites Data Table with Comparison and Filter Tabs */}
               <SiteDataTable
                 sites={sites}
                 selectedSite={selectedSite}
@@ -128,6 +151,7 @@ export function App() {
                 }}
                 onAnalyzeSite={handleOpenAnalysisForSite}
                 onExportCSV={handleExportCSV}
+                onOpenComparison={handleOpenComparison}
               />
             </div>
           )}
@@ -183,6 +207,7 @@ export function App() {
                 onSelectSite={setSelectedSite}
                 onAnalyzeSite={handleOpenAnalysisForSite}
                 onExportCSV={handleExportCSV}
+                onOpenComparison={handleOpenComparison}
               />
             </div>
           )}
@@ -255,6 +280,7 @@ export function App() {
                 onSelectSite={setSelectedSite}
                 onAnalyzeSite={handleOpenAnalysisForSite}
                 onExportCSV={handleExportCSV}
+                onOpenComparison={handleOpenComparison}
               />
             </div>
           )}
@@ -274,12 +300,24 @@ export function App() {
         onSelectSiteFromAlert={handleSelectSiteFromAlert}
       />
 
-
       {/* Functional AI Analysis Modal */}
       <AnalysisModal
         isOpen={isAnalysisModalOpen}
         onClose={() => setIsAnalysisModalOpen(false)}
         site={analysisTargetSite}
+      />
+
+      {/* Functional Benchmark Comparison Engine Modal */}
+      <SiteComparisonModal
+        isOpen={isComparisonModalOpen}
+        onClose={() => setIsComparisonModalOpen(false)}
+        allSites={sites}
+        initialSiteA={comparisonSiteA}
+        initialSiteB={comparisonSiteB}
+        onSelectSiteForView={(site) => {
+          setSelectedSite(site);
+          setCurrentTab('detection');
+        }}
       />
     </div>
   );

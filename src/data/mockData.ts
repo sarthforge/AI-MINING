@@ -174,6 +174,121 @@ export const ATACAMA_POLYGONS: OverlayPolygon[] = [
   }
 ];
 
+// Interactive SVG polygons mapped to Escondida Benchmark Copper Open Pit (Permitted Baseline)
+export const ESCONDIDA_POLYGONS: OverlayPolygon[] = [
+  {
+    id: 'escondida-concession-envelope',
+    title: 'Statutory SERNAGEOMIN Concession Cadastre #CL-AN-1998-MIN',
+    type: 'concession',
+    areaHa: 120.0,
+    color: 'rgba(16, 185, 129, 0.14)',
+    strokeColor: '#10b981',
+    label: 'Statutory Mining Title Boundary (120 ha Limit)',
+    points: '100,100 850,90 890,780 120,800',
+    description: 'Fully certified government mining concession envelope. All operations strictly monitored within legal boundaries.'
+  },
+  {
+    id: 'escondida-main-pit',
+    title: 'Authorized Open Cut Bench Excavation',
+    type: 'pit',
+    areaHa: 64.0,
+    color: 'rgba(6, 182, 212, 0.22)',
+    strokeColor: '#06b6d4',
+    label: 'Permitted Extraction Pit (64 ha)',
+    points: '220,200 680,190 710,620 230,640',
+    description: 'Terraced open pit benches operating in full compliance with environmental permit standards.'
+  },
+  {
+    id: 'escondida-leach-pad',
+    title: 'Engineered Heap Leaching & Solution Containment',
+    type: 'water',
+    areaHa: 28.0,
+    color: 'rgba(139, 92, 246, 0.22)',
+    strokeColor: '#8b5cf6',
+    label: 'Engineered Heap Pad (28 ha)',
+    points: '310,260 590,250 610,500 320,510',
+    description: 'Double-lined geomembrane pad preventing groundwater penetration. Zero perimeter seepage detected.'
+  }
+];
+
+// Interactive SVG polygons mapped to Olympic Dam Managed Cadastre (Permitted Baseline)
+export const OLYMPIC_DAM_POLYGONS: OverlayPolygon[] = [
+  {
+    id: 'olympic-concession',
+    title: 'Statutory Extraction Lease #AU-SA-OD-2021-042',
+    type: 'concession',
+    areaHa: 95.0,
+    color: 'rgba(16, 185, 129, 0.14)',
+    strokeColor: '#10b981',
+    label: 'Authorized Lease Cadastre (95 ha Limit)',
+    points: '140,110 820,100 840,790 130,810',
+    description: 'Department of Energy and Mining statutory cadastre. Zero unauthorized surface disturbance.'
+  },
+  {
+    id: 'olympic-pit-footprint',
+    title: 'Permitted Sub-Surface Portal & Crushing Complex',
+    type: 'pit',
+    areaHa: 42.0,
+    color: 'rgba(6, 182, 212, 0.22)',
+    strokeColor: '#06b6d4',
+    label: 'Approved Plant Area (42 ha)',
+    points: '250,220 660,210 680,600 260,610',
+    description: 'Authorized plant facilities and shaft headframes verified with high-resolution multispectral imagery.'
+  }
+];
+
+// Interactive SVG polygons mapped to Kiruna Magnetite Facility (Permitted Baseline)
+export const KIRUNA_POLYGONS: OverlayPolygon[] = [
+  {
+    id: 'kiruna-concession',
+    title: 'European Benchmark Extraction Title #EU-SE-LK-001',
+    type: 'concession',
+    areaHa: 75.0,
+    color: 'rgba(16, 185, 129, 0.14)',
+    strokeColor: '#10b981',
+    label: 'Permitted Cadastral Boundary (75 ha)',
+    points: '120,130 780,120 810,750 110,760',
+    description: 'Nordic environmental mining lease conforming with statutory environmental thresholds.'
+  },
+  {
+    id: 'kiruna-core-pit',
+    title: 'Regulated Surface Infrastructure & Tailings',
+    type: 'pit',
+    areaHa: 38.0,
+    color: 'rgba(6, 182, 212, 0.22)',
+    strokeColor: '#06b6d4',
+    label: 'Regulated Workings (38 ha)',
+    points: '240,240 640,230 650,580 230,590',
+    description: 'Continuous satellite subsidence and perimeter tracking confirms 100% adherence to lease bounds.'
+  }
+];
+
+// Interactive SVG polygons mapped to Grasberg Highland Sector (Permitted Baseline)
+export const GRASBERG_POLYGONS: OverlayPolygon[] = [
+  {
+    id: 'grasberg-concession',
+    title: 'ESDM Statutory Contract of Work #ID-PAP-2018-09-KK',
+    type: 'concession',
+    areaHa: 140.0,
+    color: 'rgba(16, 185, 129, 0.14)',
+    strokeColor: '#10b981',
+    label: 'Statutory Mining Envelope (140 ha)',
+    points: '90,90 890,90 910,840 90,840',
+    description: 'Ministry of Energy and Mineral Resources concession. Perimeter stabilized with high-altitude containment.'
+  },
+  {
+    id: 'grasberg-active-pit',
+    title: 'Permitted Concentrator & Open Benches',
+    type: 'pit',
+    areaHa: 72.0,
+    color: 'rgba(6, 182, 212, 0.22)',
+    strokeColor: '#06b6d4',
+    label: 'Authorized Benches (72 ha)',
+    points: '220,210 740,200 760,670 210,680',
+    description: 'Open-cut and mill infrastructure strictly within statutory contract bounds.'
+  }
+];
+
 export const MONITORED_SITES: MiningSite[] = [
   {
     id: 'site-01',
@@ -200,7 +315,11 @@ export const MONITORED_SITES: MiningSite[] = [
     notes: 'Excavation expanded past northern permitted cadastre into riparian river buffer.',
     currentImageUrl: '/satellite_current.jpg',
     baselineImageUrl: '/satellite_baseline.jpg',
-    polygons: OVERLAY_POLYGONS
+    polygons: OVERLAY_POLYGONS,
+    isPermittedBenchmark: false,
+    permitLicenseNumber: 'ANM #BR-PA-2024-88 (Breached)',
+    permittedCapHa: 16.0,
+    environmentalRating: 'Critical Breach (F)'
   },
   {
     id: 'site-02',
@@ -227,7 +346,11 @@ export const MONITORED_SITES: MiningSite[] = [
     notes: 'Hydraulic mining pumps active near protected reserve perimeter.',
     currentImageUrl: '/site_madre_de_dios.jpg',
     baselineImageUrl: '/satellite_baseline.jpg',
-    polygons: MADRE_DE_DIOS_POLYGONS
+    polygons: MADRE_DE_DIOS_POLYGONS,
+    isPermittedBenchmark: false,
+    permitLicenseNumber: 'None (Unlicensed Placer Dredging)',
+    permittedCapHa: 0.0,
+    environmentalRating: 'Critical Breach (F)'
   },
   {
     id: 'site-03',
@@ -254,7 +377,11 @@ export const MONITORED_SITES: MiningSite[] = [
     notes: 'Persistent radar backscatter drop indicates clear-cut excavation through cloud cover.',
     currentImageUrl: '/site_choco.jpg',
     baselineImageUrl: '/satellite_baseline.jpg',
-    polygons: CHOCO_POLYGONS
+    polygons: CHOCO_POLYGONS,
+    isPermittedBenchmark: false,
+    permitLicenseNumber: 'ANM #CO-CHO-812 (Expired Permit)',
+    permittedCapHa: 12.0,
+    environmentalRating: 'Critical Breach (F)'
   },
   {
     id: 'site-04',
@@ -281,7 +408,11 @@ export const MONITORED_SITES: MiningSite[] = [
     notes: 'Slight deviation along eastern haul road edge; permit verification advised.',
     currentImageUrl: '/site_carajas.jpg',
     baselineImageUrl: '/satellite_baseline.jpg',
-    polygons: CARAJAS_POLYGONS
+    polygons: CARAJAS_POLYGONS,
+    isPermittedBenchmark: false,
+    permitLicenseNumber: 'ANM #BR-PA-CR-01',
+    permittedCapHa: 44.0,
+    environmentalRating: 'Review Required (C)'
   },
   {
     id: 'site-05',
@@ -308,7 +439,11 @@ export const MONITORED_SITES: MiningSite[] = [
     notes: 'Artisanal pit deepening adjacent to commercial leasehold line.',
     currentImageUrl: '/site_carajas.jpg',
     baselineImageUrl: '/satellite_baseline.jpg',
-    polygons: CARAJAS_POLYGONS
+    polygons: CARAJAS_POLYGONS,
+    isPermittedBenchmark: false,
+    permitLicenseNumber: 'CAMI #CD-KAT-2023-77',
+    permittedCapHa: 60.0,
+    environmentalRating: 'Review Required (C)'
   },
   {
     id: 'site-06',
@@ -335,7 +470,11 @@ export const MONITORED_SITES: MiningSite[] = [
     notes: 'Pond evaporation within licensed concession grid boundaries.',
     currentImageUrl: '/site_atacama.jpg',
     baselineImageUrl: '/satellite_baseline.jpg',
-    polygons: ATACAMA_POLYGONS
+    polygons: ATACAMA_POLYGONS,
+    isPermittedBenchmark: true,
+    permitLicenseNumber: 'SERNAGEOMIN #CL-AT-2019-LIT',
+    permittedCapHa: 95.0,
+    environmentalRating: 'Compliant (A)'
   },
   {
     id: 'site-07',
@@ -362,7 +501,11 @@ export const MONITORED_SITES: MiningSite[] = [
     notes: 'Authorized hydraulic re-mining operation within demarcated dump perimeter.',
     currentImageUrl: '/satellite_current.jpg',
     baselineImageUrl: '/satellite_baseline.jpg',
-    polygons: OVERLAY_POLYGONS
+    polygons: OVERLAY_POLYGONS,
+    isPermittedBenchmark: true,
+    permitLicenseNumber: 'DMRE #ZA-GP-2020-GLD',
+    permittedCapHa: 55.0,
+    environmentalRating: 'Compliant (A)'
   },
   {
     id: 'site-08',
@@ -389,7 +532,11 @@ export const MONITORED_SITES: MiningSite[] = [
     notes: 'Pit expansion strictly inside designated 2026 open-cut mine envelope.',
     currentImageUrl: '/site_carajas.jpg',
     baselineImageUrl: '/satellite_baseline.jpg',
-    polygons: CARAJAS_POLYGONS
+    polygons: CARAJAS_POLYGONS,
+    isPermittedBenchmark: true,
+    permitLicenseNumber: 'DMIRS #AU-WA-2018-FE',
+    permittedCapHa: 125.0,
+    environmentalRating: 'Compliant (A)'
   },
   {
     id: 'site-09',
@@ -416,7 +563,11 @@ export const MONITORED_SITES: MiningSite[] = [
     notes: 'New dredging sandbank accumulation observed downstream of licensed permit.',
     currentImageUrl: '/site_choco.jpg',
     baselineImageUrl: '/satellite_baseline.jpg',
-    polygons: CHOCO_POLYGONS
+    polygons: CHOCO_POLYGONS,
+    isPermittedBenchmark: false,
+    permitLicenseNumber: 'None (Unlicensed)',
+    permittedCapHa: 0.0,
+    environmentalRating: 'Review Required (C)'
   },
   {
     id: 'site-10',
@@ -443,7 +594,11 @@ export const MONITORED_SITES: MiningSite[] = [
     notes: 'Exploration trenching observed. Cadastral check pending with Minerals Commission.',
     currentImageUrl: '/satellite_current.jpg',
     baselineImageUrl: '/satellite_baseline.jpg',
-    polygons: OVERLAY_POLYGONS
+    polygons: OVERLAY_POLYGONS,
+    isPermittedBenchmark: false,
+    permitLicenseNumber: 'MC #GH-AS-2022-AU',
+    permittedCapHa: 42.0,
+    environmentalRating: 'Review Required (C)'
   },
   {
     id: 'site-11',
@@ -470,7 +625,11 @@ export const MONITORED_SITES: MiningSite[] = [
     notes: 'Stable pit dimensions within leased cadastral bounds.',
     currentImageUrl: '/site_carajas.jpg',
     baselineImageUrl: '/satellite_baseline.jpg',
-    polygons: CARAJAS_POLYGONS
+    polygons: CARAJAS_POLYGONS,
+    isPermittedBenchmark: true,
+    permitLicenseNumber: 'ROSNEDRA #KZ-RU-2021-CHR',
+    permittedCapHa: 52.0,
+    environmentalRating: 'Compliant (A)'
   },
   {
     id: 'site-12',
@@ -497,7 +656,135 @@ export const MONITORED_SITES: MiningSite[] = [
     notes: 'Leach pad extension within 30m of boundary marker; cadastre renewal filed.',
     currentImageUrl: '/site_atacama.jpg',
     baselineImageUrl: '/satellite_baseline.jpg',
-    polygons: ATACAMA_POLYGONS
+    polygons: ATACAMA_POLYGONS,
+    isPermittedBenchmark: false,
+    permitLicenseNumber: 'SEMARNAT #MX-SON-2020-AU',
+    permittedCapHa: 72.0,
+    environmentalRating: 'Review Required (C)'
+  },
+  {
+    id: 'site-13',
+    code: 'BENCH-01',
+    name: 'Escondida Copper Complex — North Pit Benchmark',
+    region: 'Antofagasta Desert',
+    country: 'Chile',
+    latitude: -24.2667,
+    longitude: -69.0667,
+    formattedCoordinates: "24°16'00\" S, 69°04'00\" W",
+    totalAreaHa: 94.5,
+    newExcavationHa: 0.1,
+    changePercentage: 0.2,
+    confidenceScore: 98.4,
+    concessionStatus: 'Licensed',
+    alertStatus: 'Normal Compliance',
+    isPermittedBenchmark: true,
+    permitLicenseNumber: 'SERNAGEOMIN #CL-AN-1998-MIN',
+    permittedCapHa: 120.0,
+    environmentalRating: 'Compliant (A)',
+    mineralTarget: 'Porphyry Copper / Molybdenum',
+    lastObservationDate: '2026-09-28',
+    baselineDate: '2025-10-12',
+    ndviBaseline: 0.11,
+    ndviCurrent: 0.11,
+    sensor: 'Sentinel-2 MSI + WorldView-3',
+    resolution: '0.3m Resampled (Demo)',
+    notes: 'Certified statutory baseline benchmark. Operations operate 100% within SERNAGEOMIN cadastre perimeter with zero unauthorized overflow.',
+    currentImageUrl: '/site_atacama.jpg',
+    baselineImageUrl: '/satellite_baseline.jpg',
+    polygons: ESCONDIDA_POLYGONS
+  },
+  {
+    id: 'site-14',
+    code: 'BENCH-02',
+    name: 'Olympic Dam Managed Mineral Lease Benchmark',
+    region: 'South Australia',
+    country: 'Australia',
+    latitude: -30.4500,
+    longitude: 136.8833,
+    formattedCoordinates: "30°27'00\" S, 136°53'00\" E",
+    totalAreaHa: 68.2,
+    newExcavationHa: 0.0,
+    changePercentage: 0.0,
+    confidenceScore: 97.9,
+    concessionStatus: 'Licensed',
+    alertStatus: 'Normal Compliance',
+    isPermittedBenchmark: true,
+    permitLicenseNumber: 'DEM-SA #AU-SA-OD-2021-042',
+    permittedCapHa: 95.0,
+    environmentalRating: 'Compliant (A)',
+    mineralTarget: 'Copper, Uranium & Gold',
+    lastObservationDate: '2026-09-27',
+    baselineDate: '2025-11-20',
+    ndviBaseline: 0.14,
+    ndviCurrent: 0.14,
+    sensor: 'Sentinel-2 MSI (10m) / Landsat-9',
+    resolution: '10m Multi-spectral',
+    notes: 'Statutory environmental benchmark lease. Zero perimeter buffer encroachments over 24-month audit.',
+    currentImageUrl: '/site_carajas.jpg',
+    baselineImageUrl: '/satellite_baseline.jpg',
+    polygons: OLYMPIC_DAM_POLYGONS
+  },
+  {
+    id: 'site-15',
+    code: 'BENCH-03',
+    name: 'Kiruna Sub-Level Iron Ore Facility Benchmark',
+    region: 'Norrbotten',
+    country: 'Sweden',
+    latitude: 67.8557,
+    longitude: 20.2253,
+    formattedCoordinates: "67°51'20\" N, 20°13'31\" E",
+    totalAreaHa: 52.4,
+    newExcavationHa: 0.1,
+    changePercentage: 0.2,
+    confidenceScore: 99.1,
+    concessionStatus: 'Licensed',
+    alertStatus: 'Normal Compliance',
+    isPermittedBenchmark: true,
+    permitLicenseNumber: 'BERGSSTATEN #SE-BD-LK-001',
+    permittedCapHa: 75.0,
+    environmentalRating: 'Compliant (A)',
+    mineralTarget: 'Apatite Magnetite Iron',
+    lastObservationDate: '2026-09-26',
+    baselineDate: '2026-01-15',
+    ndviBaseline: 0.48,
+    ndviCurrent: 0.47,
+    sensor: 'Sentinel-1 SAR C-Band + Sentinel-2',
+    resolution: '10m InSAR Subsidence Fusion',
+    notes: 'Nordic gold-standard environmental benchmark. Advanced radar coherence confirms containment within title.',
+    currentImageUrl: '/site_carajas.jpg',
+    baselineImageUrl: '/satellite_baseline.jpg',
+    polygons: KIRUNA_POLYGONS
+  },
+  {
+    id: 'site-16',
+    code: 'BENCH-04',
+    name: 'Grasberg Highland Copper Sector 4 Benchmark',
+    region: 'Sudirman Range, Papua',
+    country: 'Indonesia',
+    latitude: -4.0558,
+    longitude: 137.1164,
+    formattedCoordinates: "04°03'21\" S, 137°06'59\" E",
+    totalAreaHa: 108.6,
+    newExcavationHa: 0.2,
+    changePercentage: 0.2,
+    confidenceScore: 96.8,
+    concessionStatus: 'Licensed',
+    alertStatus: 'Normal Compliance',
+    isPermittedBenchmark: true,
+    permitLicenseNumber: 'ESDM #ID-PAP-2018-09-KK',
+    permittedCapHa: 140.0,
+    environmentalRating: 'Compliant (A)',
+    mineralTarget: 'Porphyry Copper-Gold',
+    lastObservationDate: '2026-09-25',
+    baselineDate: '2025-12-05',
+    ndviBaseline: 0.65,
+    ndviCurrent: 0.63,
+    sensor: 'Sentinel-1 SAR Coherence + Optical',
+    resolution: '10m Cloud-penetrating SAR',
+    notes: 'Government-authorized alpine concession perimeter. Strictly adheres to approved ESDM tailing management bounds.',
+    currentImageUrl: '/site_choco.jpg',
+    baselineImageUrl: '/satellite_baseline.jpg',
+    polygons: GRASBERG_POLYGONS
   }
 ];
 
@@ -561,6 +848,32 @@ export const HISTORICAL_CHANGE_DATA: MonthlyChangePoint[] = [
   { month: 'Aug 26', date: '2026-08-15', permittedCapHa: 16.0, totalExcavationHa: 18.0, unauthorizedHa: 1.9, vegetationIndexNDVI: 0.36, turbidityIndex: 51 },
   { month: 'Sep 26', date: '2026-09-28', permittedCapHa: 16.0, totalExcavationHa: 18.6, unauthorizedHa: 2.4, vegetationIndexNDVI: 0.29, turbidityIndex: 68 }
 ];
+
+// Helper to provide site-specific multi-temporal change curves
+export function getHistoricalDataForSite(site: MiningSite): MonthlyChangePoint[] {
+  // Compliant / permitted benchmark sites: strictly stay beneath permitted concession cap
+  if (site.isPermittedBenchmark || site.alertStatus === 'Normal Compliance') {
+    const cap = site.permittedCapHa || Number((site.totalAreaHa * 1.25).toFixed(1));
+    const baseArea = Number((site.totalAreaHa * 0.94).toFixed(1));
+    const delta = site.totalAreaHa - baseArea;
+    const baseNdvi = site.ndviBaseline || 0.45;
+    
+    return [
+      { month: 'Jan 26', date: '2026-01-15', permittedCapHa: cap, totalExcavationHa: baseArea, unauthorizedHa: 0.0, vegetationIndexNDVI: Number(baseNdvi.toFixed(2)), turbidityIndex: 11 },
+      { month: 'Feb 26', date: '2026-02-15', permittedCapHa: cap, totalExcavationHa: Number((baseArea + delta * 0.15).toFixed(1)), unauthorizedHa: 0.0, vegetationIndexNDVI: Number((baseNdvi * 0.99).toFixed(2)), turbidityIndex: 12 },
+      { month: 'Mar 26', date: '2026-03-15', permittedCapHa: cap, totalExcavationHa: Number((baseArea + delta * 0.3).toFixed(1)), unauthorizedHa: 0.0, vegetationIndexNDVI: Number((baseNdvi * 0.99).toFixed(2)), turbidityIndex: 11 },
+      { month: 'Apr 26', date: '2026-04-15', permittedCapHa: cap, totalExcavationHa: Number((baseArea + delta * 0.45).toFixed(1)), unauthorizedHa: 0.0, vegetationIndexNDVI: Number((baseNdvi * 0.98).toFixed(2)), turbidityIndex: 12 },
+      { month: 'May 26', date: '2026-05-15', permittedCapHa: cap, totalExcavationHa: Number((baseArea + delta * 0.6).toFixed(1)), unauthorizedHa: 0.0, vegetationIndexNDVI: Number((baseNdvi * 0.98).toFixed(2)), turbidityIndex: 13 },
+      { month: 'Jun 26', date: '2026-06-15', permittedCapHa: cap, totalExcavationHa: Number((baseArea + delta * 0.72).toFixed(1)), unauthorizedHa: 0.0, vegetationIndexNDVI: Number((baseNdvi * 0.97).toFixed(2)), turbidityIndex: 12 },
+      { month: 'Jul 26', date: '2026-07-15', permittedCapHa: cap, totalExcavationHa: Number((baseArea + delta * 0.85).toFixed(1)), unauthorizedHa: 0.0, vegetationIndexNDVI: Number((baseNdvi * 0.97).toFixed(2)), turbidityIndex: 13 },
+      { month: 'Aug 26', date: '2026-08-15', permittedCapHa: cap, totalExcavationHa: Number((baseArea + delta * 0.94).toFixed(1)), unauthorizedHa: 0.0, vegetationIndexNDVI: Number((baseNdvi * 0.96).toFixed(2)), turbidityIndex: 12 },
+      { month: 'Sep 26', date: '2026-09-28', permittedCapHa: cap, totalExcavationHa: site.totalAreaHa, unauthorizedHa: 0.0, vegetationIndexNDVI: site.ndviCurrent, turbidityIndex: 12 }
+    ];
+  }
+  
+  // Default to historical change curve for Rio Tapajós / breach sites
+  return HISTORICAL_CHANGE_DATA;
+}
 
 export const SATELLITE_TELEMETRY = {
   constellation: 'Copernicus Sentinel-2 & WorldView-3 Sync',

@@ -6,9 +6,12 @@ export function exportSitesToCSV(sites: MiningSite[]) {
     'Site Name',
     'Region',
     'Country',
+    'Classification Category',
+    'Permit License Number',
     'Coordinates',
     'Total Footprint (ha)',
-    'Simulated New Excavation (ha)',
+    'Permitted Cap (ha)',
+    'Simulated Excavation Delta (ha)',
     'Change Percentage (%)',
     'Demo Confidence (%)',
     'Concession Status',
@@ -19,23 +22,36 @@ export function exportSitesToCSV(sites: MiningSite[]) {
     'Audit Timestamp'
   ];
 
-  const rows = sites.map(site => [
-    `"${site.code}"`,
-    `"${site.name}"`,
-    `"${site.region}"`,
-    `"${site.country}"`,
-    `"${site.formattedCoordinates}"`,
-    site.totalAreaHa,
-    site.newExcavationHa,
-    `${site.changePercentage}%`,
-    `${site.confidenceScore}%`,
-    `"${site.concessionStatus}"`,
-    `"${site.alertStatus}"`,
-    '"Suspected unauthorized mining — permit verification required"',
-    `"${site.sensor}"`,
-    site.lastObservationDate,
-    `"${new Date().toISOString()}"`
-  ]);
+  const rows = sites.map(site => {
+    const isBenchmark = site.isPermittedBenchmark || site.alertStatus === 'Normal Compliance';
+    const classification = isBenchmark ? 'Permitted Benchmark Reference' : 'Suspected Breach AOI';
+    const legalNotice = isBenchmark
+      ? 'Verified Permitted Cadastre — Compliant Baseline'
+      : (site.alertStatus === 'Investigation Required' || site.alertStatus === 'Under Review')
+        ? 'Operational Lease Verification In Progress'
+        : 'Suspected unauthorized mining — permit verification required';
+
+    return [
+      `"${site.code}"`,
+      `"${site.name}"`,
+      `"${site.region}"`,
+      `"${site.country}"`,
+      `"${classification}"`,
+      `"${site.permitLicenseNumber || 'N/A'}"`,
+      `"${site.formattedCoordinates}"`,
+      site.totalAreaHa,
+      site.permittedCapHa || 'N/A',
+      site.newExcavationHa,
+      `${site.changePercentage}%`,
+      `${site.confidenceScore}%`,
+      `"${site.concessionStatus}"`,
+      `"${site.alertStatus}"`,
+      `"${legalNotice}"`,
+      `"${site.sensor}"`,
+      site.lastObservationDate,
+      `"${new Date().toISOString()}"`
+    ];
+  });
 
   const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

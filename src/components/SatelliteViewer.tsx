@@ -9,7 +9,9 @@ import {
   MapPin,
   Calendar,
   Compass,
-  AlertTriangle
+  AlertTriangle,
+  ShieldCheck,
+  AlertOctagon
 } from 'lucide-react';
 import type { MiningSite, OverlayPolygon } from '../types';
 import { OVERLAY_POLYGONS } from '../data/mockData';
@@ -82,12 +84,23 @@ export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({ site, onAnalyz
           </div>
           <div className="h-4 w-px bg-slate-700"></div>
           <div>
-            <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            <h2 className="text-sm font-bold text-white flex items-center gap-2 flex-wrap">
               <MapPin className="w-3.5 h-3.5 text-emerald-400" />
               <span>{site.name}</span>
               <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300">
                 {site.code}
               </span>
+              {site.isPermittedBenchmark ? (
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-semibold inline-flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                  PERMITTED BENCHMARK
+                </span>
+              ) : (
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-rose-950 text-rose-300 border border-rose-800/60 font-semibold inline-flex items-center gap-1">
+                  <AlertOctagon className="w-3 h-3 text-rose-400" />
+                  BREACH AOI
+                </span>
+              )}
             </h2>
             <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
               <span>{site.formattedCoordinates}</span>
@@ -365,7 +378,13 @@ export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({ site, onAnalyz
 
           <div className="flex items-center gap-2 shrink-0">
             <span className="text-[11px] text-slate-400 font-mono">
-              Status: <span className="text-amber-400">Permit Verification Required</span>
+              Status: {selectedPolygon.type === 'suspected' ? (
+                <span className="text-rose-400 font-bold">Unpermitted Excavation Breach</span>
+              ) : selectedPolygon.type === 'concession' ? (
+                <span className="text-emerald-400 font-semibold">Registered Cadastral Boundary (ANM/SERNAGEOMIN)</span>
+              ) : (
+                <span className="text-cyan-400 font-semibold">Authorized Mine Workings & Plant</span>
+              )}
             </span>
           </div>
         </div>

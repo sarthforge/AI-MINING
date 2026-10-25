@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   AreaChart, 
   Area, 
@@ -12,8 +12,8 @@ import {
   Legend
 } from 'recharts';
 import { Activity, Calendar } from 'lucide-react';
-import { HISTORICAL_CHANGE_DATA } from '../data/mockData';
-import type { MiningSite } from '../types';
+import { fallbackHistory, fetchSiteHistory } from '../services/api';
+import type { MiningSite, MonthlyChangePoint } from '../types';
 
 interface ChangeTrackingChartProps {
   site: MiningSite;
@@ -21,6 +21,17 @@ interface ChangeTrackingChartProps {
 
 export const ChangeTrackingChart: React.FC<ChangeTrackingChartProps> = ({ site }) => {
   const [metricView, setMetricView] = useState<'area' | 'indices'>('area');
+  const [history, setHistory] = useState<MonthlyChangePoint[]>(fallbackHistory);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchSiteHistory(site.id).then((data) => {
+      if (!cancelled) setHistory(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [site.id]);
 
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -107,7 +118,7 @@ export const ChangeTrackingChart: React.FC<ChangeTrackingChartProps> = ({ site }
       <div className="h-72 w-full pt-2">
         <ResponsiveContainer width="100%" height="100%">
           {metricView === 'area' ? (
-            <AreaChart data={HISTORICAL_CHANGE_DATA} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+            <AreaChart data={history} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="totalExcavationGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
@@ -153,7 +164,7 @@ export const ChangeTrackingChart: React.FC<ChangeTrackingChartProps> = ({ site }
               />
             </AreaChart>
           ) : (
-            <AreaChart data={HISTORICAL_CHANGE_DATA} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+            <AreaChart data={history} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
               <defs>
                 <linearGradient id="ndviGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />

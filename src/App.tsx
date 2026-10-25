@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import type { NavTab } from './components/Sidebar';
@@ -10,7 +10,14 @@ import { SiteDataTable } from './components/SiteDataTable';
 import { AnalysisModal } from './components/AnalysisModal';
 import { AlertDrawer } from './components/AlertDrawer';
 import { DisclaimerFooter } from './components/DisclaimerFooter';
-import { MONITORED_SITES, SIMULATED_ALERTS } from './data/mockData';
+import {
+  dismissAlert,
+  fallbackAlerts,
+  fallbackSites,
+  fetchAlerts,
+  fetchSites,
+  resetAlerts,
+} from './services/api';
 import type { MiningSite, SatelliteAlert } from './types';
 import { exportSitesToCSV } from './utils/csvExport';
 import { 
@@ -21,14 +28,29 @@ import {
 
 
 export function App() {
-  const [sites] = useState<MiningSite[]>(MONITORED_SITES);
-  const [selectedSite, setSelectedSite] = useState<MiningSite>(MONITORED_SITES[0]);
+  const [sites, setSites] = useState<MiningSite[]>(fallbackSites);
+  const [selectedSite, setSelectedSite] = useState<MiningSite>(fallbackSites[0]);
   const [currentTab, setCurrentTab] = useState<NavTab>('overview');
   const [selectedDateRange, setSelectedDateRange] = useState<string>('30d');
-  const [alerts, setAlerts] = useState<SatelliteAlert[]>(SIMULATED_ALERTS);
+  const [alerts, setAlerts] = useState<SatelliteAlert[]>(fallbackAlerts);
   const [isAlertDrawerOpen, setIsAlertDrawerOpen] = useState<boolean>(false);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState<boolean>(false);
-  const [analysisTargetSite, setAnalysisTargetSite] = useState<MiningSite>(MONITORED_SITES[0]);
+  const [analysisTargetSite, setAnalysisTargetSite] = useState<MiningSite>(fallbackSites[0]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [nextSites, nextAlerts] = await Promise.all([fetchSites(), fetchAlerts()]);
+      if (cancelled || nextSites.length === 0) return;
+      setSites(nextSites);
+      setSelectedSite((prev) => nextSites.find((s) => s.id === prev.id) ?? nextSites[0]);
+      setAnalysisTargetSite((prev) => nextSites.find((s) => s.id === prev.id) ?? nextSites[0]);
+      setAlerts(nextAlerts);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const unreadAlertCount = alerts.filter(a => !a.dismissed).length;
 
@@ -43,12 +65,18 @@ export function App() {
     setIsAnalysisModalOpen(true);
   };
 
-  const handleDismissAlert = (alertId: string) => {
-    setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, dismissed: true } : a));
+  const handleDismissAlert = async (alertId: string) => {
+    const updated = await dismissAlert(alertId);
+    setAlerts((prev) =>
+      prev.map((a) =>
+        a.id === alertId ? (updated ?? { ...a, dismissed: true }) : a,
+      ),
+    );
   };
 
-  const handleResetAlerts = () => {
-    setAlerts(SIMULATED_ALERTS);
+  const handleResetAlerts = async () => {
+    const next = await resetAlerts();
+    setAlerts(next ?? fallbackAlerts);
   };
 
   const handleSelectSiteFromAlert = (siteId: string) => {

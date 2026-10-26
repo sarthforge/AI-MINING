@@ -9,6 +9,9 @@ import { ChangeTrackingChart } from './components/ChangeTrackingChart';
 import { SiteDataTable } from './components/SiteDataTable';
 import { AnalysisModal } from './components/AnalysisModal';
 import { SiteComparisonModal } from './components/SiteComparisonModal';
+import { GovtNoticeModal } from './components/GovtNoticeModal';
+import { CustomScanModal } from './components/CustomScanModal';
+import { DispatchToast, type DispatchMission } from './components/DispatchToast';
 import { AlertDrawer } from './components/AlertDrawer';
 import { DisclaimerFooter } from './components/DisclaimerFooter';
 import {
@@ -41,6 +44,15 @@ export function App() {
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState<boolean>(false);
   const [comparisonSiteA, setComparisonSiteA] = useState<MiningSite | undefined>(undefined);
   const [comparisonSiteB, setComparisonSiteB] = useState<MiningSite | undefined>(undefined);
+
+  // Statutory Government Notice State
+  const [isGovtNoticeOpen, setIsGovtNoticeOpen] = useState<boolean>(false);
+
+  // Custom Satellite Upload & Scanner State
+  const [isCustomScanOpen, setIsCustomScanOpen] = useState<boolean>(false);
+
+  // Automated Drone Enforcement Mission State
+  const [activeMission, setActiveMission] = useState<DispatchMission | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,6 +125,26 @@ export function App() {
     exportSitesToCSV(sites);
   };
 
+  const handleApplyCustomScan = (customSite: MiningSite) => {
+    setSites(prev => [customSite, ...prev.filter(s => s.id !== customSite.id)]);
+    setSelectedSite(customSite);
+    setAnalysisTargetSite(customSite);
+    setCurrentTab('overview');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleTriggerDispatch = (targetName: string, coordinates: string) => {
+    const mission: DispatchMission = {
+      id: `mission-${Date.now()}`,
+      targetName,
+      coordinates,
+      timestamp: new Date().toISOString().slice(11, 19) + ' UTC',
+      etaSeconds: 480,
+      unitCode: `UAV-ALPHA-${Math.floor(Math.random() * 8 + 1)}`
+    };
+    setActiveMission(mission);
+  };
+
   return (
     <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-sans">
       {/* Top Application Header */}
@@ -127,6 +159,8 @@ export function App() {
         unreadAlertCount={unreadAlertCount}
         onExportCSV={handleExportCSV}
         onOpenComparison={() => handleOpenComparison(selectedSite)}
+        onOpenGovtNotice={() => setIsGovtNoticeOpen(true)}
+        onOpenCustomScan={() => setIsCustomScanOpen(true)}
       />
 
       {/* Main Workspace Layout (Sidebar + Content Area) */}
@@ -161,6 +195,8 @@ export function App() {
               <SatelliteViewer
                 site={selectedSite}
                 onAnalyzeSite={() => handleOpenAnalysisForSite(selectedSite)}
+                onOpenGovtNotice={() => setIsGovtNoticeOpen(true)}
+                onDispatchDrone={() => handleTriggerDispatch(selectedSite.name, selectedSite.formattedCoordinates)}
               />
 
               {/* Before/After & Historical Chart Grid */}
@@ -202,6 +238,8 @@ export function App() {
               <SatelliteViewer
                 site={selectedSite}
                 onAnalyzeSite={() => handleOpenAnalysisForSite(selectedSite)}
+                onOpenGovtNotice={() => setIsGovtNoticeOpen(true)}
+                onDispatchDrone={() => handleTriggerDispatch(selectedSite.name, selectedSite.formattedCoordinates)}
               />
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -325,6 +363,7 @@ export function App() {
         onDismissAlert={handleDismissAlert}
         onResetAlerts={handleResetAlerts}
         onSelectSiteFromAlert={handleSelectSiteFromAlert}
+        onDispatchDrone={(alert) => handleTriggerDispatch(alert.siteName, alert.coordinates)}
       />
 
       {/* Functional AI Analysis Modal */}
@@ -345,6 +384,27 @@ export function App() {
           setSelectedSite(site);
           setCurrentTab('detection');
         }}
+      />
+
+      {/* Statutory Government Inspection & Violation FIR Notice Modal */}
+      <GovtNoticeModal
+        isOpen={isGovtNoticeOpen}
+        onClose={() => setIsGovtNoticeOpen(false)}
+        site={selectedSite}
+      />
+
+      {/* Custom Satellite Image Upload & Live Scanner Modal */}
+      <CustomScanModal
+        isOpen={isCustomScanOpen}
+        onClose={() => setIsCustomScanOpen(false)}
+        onApplyToDashboard={handleApplyCustomScan}
+      />
+
+      {/* Automated Drone Enforcement Floating HUD Notification */}
+      <DispatchToast
+        key={activeMission?.id}
+        mission={activeMission}
+        onDismiss={() => setActiveMission(null)}
       />
     </div>
   );

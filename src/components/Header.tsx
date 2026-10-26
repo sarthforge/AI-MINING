@@ -6,7 +6,9 @@ import {
   Calendar, 
   Sparkles,
   MapPin,
-  Scale
+  Scale,
+  FileText,
+  Upload
 } from 'lucide-react';
 import type { MiningSite } from '../types';
 
@@ -22,6 +24,8 @@ interface HeaderProps {
   unreadAlertCount: number;
   onExportCSV: () => void;
   onOpenComparison?: () => void;
+  onOpenGovtNotice?: () => void;
+  onOpenCustomScan?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -34,7 +38,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAlerts,
   unreadAlertCount,
   onExportCSV,
-  onOpenComparison
+  onOpenComparison,
+  onOpenGovtNotice,
+  onOpenCustomScan
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-[#070b14]/90 backdrop-blur-md border-b border-slate-800/80 px-4 lg:px-6 py-3 text-slate-100 shadow-xl shadow-black/40">
@@ -121,6 +127,19 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
+          {/* Custom Image Upload & Scanner Action Button */}
+          {onOpenCustomScan && (
+            <button
+              onClick={onOpenCustomScan}
+              className="flex items-center gap-1.5 bg-[#0e172a] hover:bg-[#1e293b] text-emerald-300 hover:text-emerald-200 text-xs px-3 py-1.5 rounded-lg border border-emerald-500/40 shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              title="Upload custom satellite image or drone orthophoto for AI anomaly scan"
+            >
+              <Upload className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">Upload & Scan</span>
+              <span className="sm:hidden">Upload</span>
+            </button>
+          )}
+
           {/* Analyze Site Action Button */}
           <button
             onClick={onOpenAnalysis}
@@ -140,6 +159,19 @@ export const Header: React.FC<HeaderProps> = ({
             <Download className="w-3.5 h-3.5 text-slate-400" />
             <span className="hidden sm:inline">CSV Report</span>
           </button>
+
+          {/* Statutory Notice / FIR Generator Button */}
+          {onOpenGovtNotice && (
+            <button
+              onClick={onOpenGovtNotice}
+              className="flex items-center gap-1.5 bg-[#1e1329] hover:bg-[#2b183d] text-amber-300 hover:text-amber-200 text-xs px-2.5 py-1.5 rounded-lg border border-amber-600/40 shadow-sm transition cursor-pointer"
+              title="Generate Official Statutory Mining Inspection Notice / FIR (PDF)"
+            >
+              <FileText className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Statutory Notice (PDF)</span>
+              <span className="sm:hidden">Notice</span>
+            </button>
+          )}
 
           {/* Dismissible Alerts Trigger */}
           <button

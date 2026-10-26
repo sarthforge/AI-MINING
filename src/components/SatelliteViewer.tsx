@@ -11,7 +11,10 @@ import {
   Compass,
   AlertTriangle,
   ShieldCheck,
-  AlertOctagon
+  AlertOctagon,
+  Landmark,
+  FileText,
+  Navigation
 } from 'lucide-react';
 import type { MiningSite, OverlayPolygon } from '../types';
 
@@ -19,11 +22,18 @@ import type { MiningSite, OverlayPolygon } from '../types';
 interface SatelliteViewerProps {
   site: MiningSite;
   onAnalyzeSite: () => void;
+  onOpenGovtNotice?: () => void;
+  onDispatchDrone?: () => void;
 }
 
 type LayerMode = 'all' | 'suspected' | 'concession' | 'raw';
 
-export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({ site, onAnalyzeSite }) => {
+export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({ 
+  site, 
+  onAnalyzeSite, 
+  onOpenGovtNotice,
+  onDispatchDrone 
+}) => {
   // polygons come from GET /sites (or mock fallback sites); empty = raw imagery only
   const sitePolygons = site.polygons ?? [];
   const [activeLayer, setActiveLayer] = useState<LayerMode>('all');
@@ -32,6 +42,14 @@ export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({ site, onAnalyz
   const [showCrosshair, setShowCrosshair] = useState<boolean>(true);
   const [cursorCoords, setCursorCoords] = useState<{ x: number; y: number; lat: string; lon: string; ndvi: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Derived legal cadastre parameters
+  const isBenchmark = Boolean(site.isPermittedBenchmark || site.alertStatus === 'Normal Compliance');
+  const concessionPoly = sitePolygons.find(p => p.type === 'concession');
+  const suspectedPoly = sitePolygons.find(p => p.type === 'suspected');
+  const permittedCap = site.permittedCapHa ?? concessionPoly?.areaHa ?? (isBenchmark ? site.totalAreaHa : 16.0);
+  const encroachmentArea = isBenchmark ? 0 : (suspectedPoly?.areaHa ?? site.newExcavationHa ?? 2.4);
+  const licenseNumber = site.permitLicenseNumber || (isBenchmark ? `REG-${site.code}-LEGAL-CADASTRE` : `ANM-TITLE-${site.code}-REVOKED`);
 
   // Sync selected polygon when site changes
   React.useEffect(() => {
@@ -122,6 +140,47 @@ export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({ site, onAnalyz
         </div>
       </div>
 
+      {/* Statutory Cadastre & Spatial Compliance Strip */}
+      <div className={`px-4 py-2.5 border-b text-xs font-mono flex flex-wrap items-center justify-between gap-3 ${
+        isBenchmark 
+          ? 'bg-emerald-950/20 border-emerald-900/40 text-emerald-200' 
+          : 'bg-rose-950/20 border-rose-900/40 text-rose-200'
+      }`}>
+        <div className="flex items-center flex-wrap gap-4">
+          <div className="flex items-center gap-2">
+            <Landmark className={`w-4 h-4 shrink-0 ${isBenchmark ? 'text-emerald-400' : 'text-rose-400'}`} />
+            <div>
+              <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Statutory Lease Cadastre</span>
+              <span className="font-semibold text-slate-100">{licenseNumber}</span>
+            </div>
+          </div>
+          <div className="h-6 w-px bg-slate-800 hidden sm:block"></div>
+          <div>
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Permitted Quota</span>
+            <span className="font-semibold text-slate-200">{permittedCap.toFixed(1)} ha</span>
+          </div>
+          <div className="h-6 w-px bg-slate-800 hidden sm:block"></div>
+          <div>
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Active Excavation</span>
+            <span className="font-semibold text-slate-200">{site.totalAreaHa.toFixed(1)} ha</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isBenchmark ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-900/40 border border-emerald-700/60 text-emerald-300 font-semibold text-[11px]">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              100% WITHIN STATUTORY BOUNDARY (0.0 ha Breach)
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-900/40 border border-rose-700/60 text-rose-300 font-bold text-[11px] animate-pulse">
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+              ILLEGAL ENCROACHMENT: +{encroachmentArea.toFixed(1)} ha BEYOND CADASTRE
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Main Satellite View Area */}
       <div 
         ref={containerRef}
@@ -208,10 +267,17 @@ export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({ site, onAnalyz
             <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
             <span>SENTINEL-2 MSI L2A • ORTHORECTIFIED</span>
           </div>
-          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-950/80 border border-amber-600/40 text-[10px] font-mono text-amber-300">
-            <AlertTriangle className="w-3 h-3 text-amber-400" />
-            <span>SUSPECTED UNAUTHORIZED MINING — PERMIT VERIFICATION REQUIRED</span>
-          </div>
+          {isBenchmark ? (
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/85 border border-emerald-600/60 text-[10px] font-mono text-emerald-300">
+              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+              <span>STATUTORY LEASE VERIFIED • 100% WITHIN CONCESSION BOUNDARY</span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-rose-950/85 border border-rose-600/60 text-[10px] font-mono text-rose-300">
+              <AlertTriangle className="w-3 h-3 text-rose-400" />
+              <span>STATUTORY BOUNDARY BREACH • UNAUTHORIZED EXCAVATION BEYOND CADASTRE</span>
+            </div>
+          )}
         </div>
 
         {/* Top-Right Interactive Toolbar */}
@@ -322,11 +388,15 @@ export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({ site, onAnalyz
           </span>
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-sm bg-rose-600/40 border-2 border-rose-500 animate-pulse"></span>
-            <span className="text-slate-300 font-medium">Suspected Excavation (+2.4 ha)</span>
+            <span className="text-slate-300 font-medium">
+              {isBenchmark 
+                ? `Extraction Pit (${site.newExcavationHa.toFixed(1)} ha)` 
+                : `Suspected Encroachment (+${encroachmentArea.toFixed(1)} ha)`}
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-sm bg-emerald-600/20 border-2 border-dashed border-emerald-400"></span>
-            <span className="text-slate-300">Concession Lease (16.0 ha)</span>
+            <span className="text-slate-300">Concession Lease ({permittedCap.toFixed(1)} ha)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-sm bg-cyan-600/30 border-2 border-cyan-400"></span>
@@ -340,6 +410,28 @@ export const SatelliteViewer: React.FC<SatelliteViewerProps> = ({ site, onAnalyz
 
         {/* Quick Action Button */}
         <div className="flex items-center gap-2">
+          {onOpenGovtNotice && (
+            <button
+              onClick={onOpenGovtNotice}
+              className="flex items-center gap-2 px-3 py-1.5 bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border border-amber-600/50 rounded-lg text-xs font-semibold transition cursor-pointer"
+              title="Generate Official Statutory Mining Inspection Notice / FIR (PDF)"
+            >
+              <FileText className="w-3.5 h-3.5 text-amber-400" />
+              <span>Statutory Notice (PDF)</span>
+            </button>
+          )}
+
+          {!isBenchmark && onDispatchDrone && (
+            <button
+              onClick={onDispatchDrone}
+              className="flex items-center gap-2 px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-600/50 rounded-lg text-xs font-semibold transition cursor-pointer"
+              title="Dispatch autonomous UAV patrol drone to current breach coordinates"
+            >
+              <Navigation className="w-3.5 h-3.5 text-rose-400" />
+              <span>Dispatch Drone</span>
+            </button>
+          )}
+
           <button
             onClick={onAnalyzeSite}
             className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs font-semibold transition cursor-pointer"

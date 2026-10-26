@@ -75,3 +75,25 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
+
+/* Print Stylesheet for Official Government Notice */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Hide everything except the print container */
+  header, aside, footer, #site-select, .print\:hidden {
+    display: none !important;
+  }
+
+  #govt-notice-print-area {
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+}

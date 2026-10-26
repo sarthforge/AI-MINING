@@ -4,7 +4,8 @@ import {
   AlertOctagon, 
   MapPin, 
   CheckCircle, 
-  RotateCcw
+  RotateCcw,
+  Navigation
 } from 'lucide-react';
 import type { SatelliteAlert } from '../types';
 
@@ -15,6 +16,7 @@ interface AlertDrawerProps {
   onDismissAlert: (id: string) => void;
   onResetAlerts: () => void;
   onSelectSiteFromAlert: (siteId: string) => void;
+  onDispatchDrone?: (alert: SatelliteAlert) => void;
 }
 
 export const AlertDrawer: React.FC<AlertDrawerProps> = ({
@@ -23,7 +25,8 @@ export const AlertDrawer: React.FC<AlertDrawerProps> = ({
   alerts,
   onDismissAlert,
   onResetAlerts,
-  onSelectSiteFromAlert
+  onSelectSiteFromAlert,
+  onDispatchDrone
 }) => {
   if (!isOpen) return null;
 
@@ -145,6 +148,19 @@ export const AlertDrawer: React.FC<AlertDrawerProps> = ({
                     {alert.timestamp}
                   </span>
                   <div className="flex items-center gap-2">
+                    {onDispatchDrone && (
+                      <button
+                        onClick={() => {
+                          onDispatchDrone(alert);
+                          onClose();
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 text-[11px] font-semibold transition cursor-pointer"
+                        title="Dispatch autonomous UAV drone patrol"
+                      >
+                        <Navigation className="w-3 h-3 text-rose-400" />
+                        <span>Dispatch Drone</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         onSelectSiteFromAlert(alert.siteId);
